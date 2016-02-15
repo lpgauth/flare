@@ -1,0 +1,12 @@
+[{<<"fprofx">>,
+  {git,"https://github.com/ransomr/fprofx.git",
+       {ref,"115098c4f70dd6ff3ec76657aaa85591cfae1dce"}},
+  1},
+ {<<"snappy">>,
+  {git,"https://github.com/lpgauth/snappy-erlang-nif.git",
+       {ref,"fba0b41114c6621fd3d4fc259bb05372e7408eb9"}},
+  0},
+ {<<"shackle">>,
+  {git,"https://github.com/lpgauth/shackle.git",
+       {ref,"6588d4d89557e2eea69a2bfcd22d1c29d09d0b5d"}},
+  0}].

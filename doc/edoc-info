@@ -1,0 +1,3 @@
+%% encoding: UTF-8
+{application,flare}.
+{modules,[flare,flare_app,flare_client,flare_protocol,flare_sup]}.

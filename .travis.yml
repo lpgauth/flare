@@ -1,0 +1,24 @@
+before_install:
+  - wget https://archive.apache.org/dist/kafka/0.9.0.0/kafka_2.11-0.9.0.0.tgz
+  - tar -xzf kafka_2.11-0.9.0.0.tgz && cd kafka_2.11-0.9.0.0
+  - bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
+  - bin/kafka-server-start.sh -daemon config/server.properties
+  - for i in {1..10}; do bin/kafka-topics.sh \
+    --create --zookeeper localhost:2181 \
+    --replication-factor 1 \
+    --partitions 1 \
+    --topic test && break || sleep 2; done
+  - cd $TRAVIS_BUILD_DIR
+cache:
+  directories:
+    - $HOME/.cache/rebar3
+    - $TRAVIS_BUILD_DIR/_build
+install: true
+language: erlang
+notifications:
+  email: false
+otp_release:
+  - 18.3
+  - 17.5
+script: "make travis"
+sudo: false
