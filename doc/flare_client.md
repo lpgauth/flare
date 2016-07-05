@@ -16,7 +16,7 @@
 
 
 <pre><code>
-state() = #state{}
+state() = #state{request_counter = non_neg_integer()}
 </code></pre>
 
 <a name="index"></a>
@@ -45,7 +45,7 @@ handle_data(Data::binary(), State::<a href="#type-state">state()</a>) -&gt; {ok,
 ### handle_request/2 ###
 
 <pre><code>
-handle_request(Request::term(), State::<a href="#type-state">state()</a>) -&gt; {ok, pos_integer(), binary(), <a href="#type-state">state()</a>}
+handle_request(X1::term(), State::<a href="#type-state">state()</a>) -&gt; {ok, non_neg_integer(), iolist(), <a href="#type-state">state()</a>}
 </code></pre>
 <br />
 
