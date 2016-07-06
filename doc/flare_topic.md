@@ -12,6 +12,16 @@
 
 
 
+### <a name="type-compression_name">compression_name()</a> ###
+
+
+<pre><code>
+compression_name() = none | snappy
+</code></pre>
+
+
+
+
 ### <a name="type-msg">msg()</a> ###
 
 
@@ -36,7 +46,7 @@ topic_name() = binary()
 
 
 <pre><code>
-topic_opt() = {pool_size, pos_integer()}
+topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {pool_size, pos_integer()}
 </code></pre>
 
 
@@ -75,7 +85,7 @@ init() -&gt; ok
 ### produce/2 ###
 
 <pre><code>
-produce(Topic::<a href="#type-topic_name">topic_name()</a>, Msg::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
+produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
 </code></pre>
 <br />
 

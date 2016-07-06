@@ -39,7 +39,8 @@ name(Id) ->
     list_to_atom("flare_broker_" ++ integer_to_list(Id)).
 
 topic(Topic) ->
-    topic(?GET_ENV(bootstrap_brokers, ?DEFAULT_BOOTSTRAP_BROKERS), Topic).
+    topic(?GET_ENV(broker_bootstrap_servers,
+        ?DEFAULT_BROKER_BOOTSTRAP_SERVERS), Topic).
 
 topic([], _Topic) ->
     {error, no_metadata};

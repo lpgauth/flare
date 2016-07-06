@@ -12,5 +12,5 @@
 -spec produce(topic_name(), msg()) ->
     ok | {error, atom()}.
 
-produce(Topic, Msg) ->
-    flare_topic:produce(Topic, Msg).
+produce(Topic, Message) ->
+    flare_topic:produce(Topic, Message).

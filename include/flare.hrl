@@ -6,8 +6,8 @@
 -define(REQUEST_PRODUCE, 0).
 -define(REQUEST_METADATA, 3).
 
--define(COMPRESSIONS_NONE, 0).
--define(COMPRESSIONS_SNAPPY, 2).
+-define(COMPRESSION_NONE, 0).
+-define(COMPRESSION_SNAPPY, 2).
 
 %% record
 -record(broker, {
@@ -43,8 +43,9 @@
 
 %% types
 -type broker()             :: #broker {}.
--type compression()        :: ?COMPRESSIONS_NONE |
-                              ?COMPRESSIONS_SNAPPY.
+-type compression_name()   :: none | snappy.
+-type compression()        :: ?COMPRESSION_NONE |
+                              ?COMPRESSION_SNAPPY.
 -type msg()                :: binary().
 -type partition()          :: #partition {}.
 -type partition_id()       :: non_neg_integer().
@@ -55,6 +56,6 @@
 -type topic_opt()          :: {acks, 0..65535} |
                               {buffer_delay, pos_integer()} |
                               {buffer_size, non_neg_integer()} |
-                              {compression, compression()} |
+                              {compression, compression_name()} |
                               {pool_size, pos_integer()}.
 -type topic_opts()         :: [topic_opt()].

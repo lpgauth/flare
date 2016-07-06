@@ -19,7 +19,7 @@
 ]).
 
 -define(ACK, 1).
--define(COMPRESSION, ?COMPRESSIONS_SNAPPY).
+-define(COMPRESSION, ?COMPRESSION_SNAPPY).
 
 -record(state, {
     acks             :: 1..65535,
@@ -54,8 +54,8 @@ init(Parent, Name, Topic, Opts) ->
         ?DEFAULT_TOPIC_BUFFER_DELAY),
     BufferSizeMax = ?LOOKUP(buffer_size, Opts,
         ?DEFAULT_TOPIC_BUFFER_SIZE),
-    Compression = ?LOOKUP(compression, Opts,
-        ?DEFAULT_TOPIC_COMPRESSION),
+    Compression = compression(?LOOKUP(compression, Opts,
+        ?DEFAULT_TOPIC_COMPRESSION)),
 
     loop(#state {
         acks = Acks,
@@ -100,6 +100,17 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
     exit(Reason).
 
 %% private
+compress(?COMPRESSION_NONE, Messages) ->
+    Messages;
+compress(?COMPRESSION_SNAPPY, Messages) ->
+    {ok, Messages2} = snappy:compress(Messages),
+    Messages2.
+
+compression(none) ->
+    ?COMPRESSION_NONE;
+compression(snappy) ->
+    ?COMPRESSION_SNAPPY.
+
 handle_msg(?MSG_METADATA, #state {
         topic = Topic
     } = State) ->
@@ -130,15 +141,15 @@ handle_msg(?MSG_TIMEOUT, #state {
         buffer_size = 0,
         timer_ref = timer(BufferDelayMax)
     }};
-handle_msg({produce, Msg}, #state {
+handle_msg({produce, Message}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
         buffer_size_max = SizeMax
     } = State) ->
 
-    Buffer2 = [Msg | Buffer],
-    case BufferSize + iolist_size(Msg) of
+    Buffer2 = [Message | Buffer],
+    case BufferSize + iolist_size(Message) of
         X  when X > SizeMax ->
             produce(Buffer2, State),
 
@@ -163,24 +174,25 @@ loop(#state {parent = Parent} = State) ->
             terminate(State);
         {system, From, Request} ->
             sys:handle_system_msg(Request, From, Parent, ?MODULE, [], State);
-        Msg ->
-            {ok, State2} = handle_msg(Msg, State),
+        Message ->
+            {ok, State2} = handle_msg(Message, State),
             loop(State2)
     end.
 
 produce([], _State) ->
     ok;
-produce(_Msgs, #state {partitions = undefined}) ->
+produce(_Messages, #state {partitions = undefined}) ->
     ok;
-produce(Msgs, #state {
+produce(Messages, #state {
+        compression = Compression,
         partitions = Partitions,
         topic = Topic
     }) ->
 
-    Msgs2 = flare_protocol:encode_message_set(lists:reverse(Msgs)),
-    {ok, Msgs3} = snappy:compress(Msgs2),
+    Messages2 = flare_protocol:encode_message_set(lists:reverse(Messages)),
+    Messages3 = compress(Compression, Messages2),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
-    Cast = {produce, Topic, Partition, Msgs3, ?ACK, ?COMPRESSION},
+    Cast = {produce, Topic, Partition, Messages3, ?ACK, ?COMPRESSION},
     shackle:cast(PoolName, Cast).
 
 terminate(#state {

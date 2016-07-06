@@ -40,7 +40,7 @@ handle_request({produce, Topic, Partition, Msgs, Acks, Compression}, #state {
     } = State) ->
 
     RequestId = request_id(RequestCounter),
-    % TODO: split encoding in two phase (MsgSet outside of client)
+    % TODO: split encoding in two phase (MessageSet outside of client)
     Data = flare_protocol:encode_produce(RequestId, ?CLIENT_ID, Topic,
         Partition, Msgs, Acks, Compression),
 

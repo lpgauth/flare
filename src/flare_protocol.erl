@@ -31,11 +31,11 @@ decode_produce(<<CorrelationId:32, Length:32, Rest/binary>>) ->
 -spec encode_produce(integer(), iolist(), topic_name(), non_neg_integer(),
     msg(), integer(), compression()) -> iolist().
 
-encode_produce(CorrelationId, ClientId, Topic, Partition, Msgs, Acks,
+encode_produce(CorrelationId, ClientId, Topic, Partition, Messages, Acks,
         Compression) ->
 
-    MsgSet = encode_message_set(Msgs, Compression),
-    Partition2 = encode_partion(Partition, MsgSet),
+    MessageSet = encode_message_set(Messages, Compression),
+    Partition2 = encode_partion(Partition, MessageSet),
     Topic2 = [[encode_string(Topic), encode_array([Partition2])]],
     Request = [<<Acks:16, (?TIMEOUT):32>>, encode_array(Topic2)],
     encode_request(?REQUEST_PRODUCE, CorrelationId, ClientId, Request).
@@ -50,20 +50,20 @@ encode_metadata(CorrelationId, ClientId, Topics) ->
 -spec encode_message_set(binary() | [binary()]) ->
     iolist().
 
-encode_message_set(Msgs) ->
-    encode_message_set(Msgs, 0).
+encode_message_set(Messages) ->
+    encode_message_set(Messages, 0).
 
 -spec encode_message_set(binary() | [binary()], compression()) ->
     iolist().
 
 encode_message_set([], _Compression) ->
     [];
-encode_message_set(Msg, Compression) when is_binary(Msg) ->
-    Msg2 = encode_message(Msg, Compression),
-    [<<?OFFSET:64, (iolist_size(Msg2)):32>>, Msg2];
-encode_message_set([Msg | T], Compression) ->
-    Msg2 = encode_message(Msg, Compression),
-    [[<<?OFFSET:64, (iolist_size(Msg2)):32>>, Msg2],
+encode_message_set(Message, Compression) when is_binary(Message) ->
+    Message2 = encode_message(Message, Compression),
+    [<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2];
+encode_message_set([Message | T], Compression) ->
+    Message2 = encode_message(Message, Compression),
+    [[<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2],
         encode_message_set(T, Compression)].
 
 %% private
@@ -174,13 +174,13 @@ encode_bytes(undefined) ->
 encode_bytes(Data) ->
     [<<(iolist_size(Data)):32>>, Data].
 
-encode_message(Msg, Compresion) ->
-    Msg2 = [<<?API_VERSION:8, Compresion:8>>, encode_bytes(undefined),
-        encode_bytes(Msg)],
-    [<<(erlang:crc32(Msg2)):32>>, Msg2].
+encode_message(Message, Compresion) ->
+    Message2 = [<<?API_VERSION:8, Compresion:8>>, encode_bytes(undefined),
+        encode_bytes(Message)],
+    [<<(erlang:crc32(Message2)):32>>, Message2].
 
-encode_partion(Partition, MsgSet) ->
-    [<<Partition:32, (iolist_size(MsgSet)):32>>, MsgSet].
+encode_partion(Partition, MessageSet) ->
+    [<<Partition:32, (iolist_size(MessageSet)):32>>, MessageSet].
 
 encode_request(ApiKey, CorrelationId, ClientId, Request) ->
     [<<ApiKey:16, ?API_VERSION:16, CorrelationId:32>>,

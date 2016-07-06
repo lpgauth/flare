@@ -29,13 +29,13 @@ init() ->
 -spec produce(topic_name(), msg()) ->
     ok | {error, atom()}.
 
-produce(Topic, Msg) ->
+produce(Topic, Message) ->
     case flare_utils:ets_lookup_element(?ETS_TABLE_TOPIC, Topic) of
         undefined ->
             {error, topic_not_started};
         PoolSize ->
             N = shackle_utils:random(PoolSize) + 1,
-            topic_buffer_msg(Topic, N, {produce, Msg}),
+            topic_buffer_msg(Topic, N, {produce, Message}),
             ok
         end.
 
@@ -94,5 +94,5 @@ stop_topic_buffers(Topic, N) ->
     ok = supervisor:delete_child(?SUPERVISOR, Name),
     stop_topic_buffers(Topic, N - 1).
 
-topic_buffer_msg(Topic, Index, Msg) ->
-    flare_topic_utils:server_name(Topic, Index) ! Msg.
+topic_buffer_msg(Topic, Index, Message) ->
+    flare_topic_utils:server_name(Topic, Index) ! Message.

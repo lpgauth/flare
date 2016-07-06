@@ -42,6 +42,26 @@ client_options() = [<a href="#type-client_option">client_option()</a>]
 
 
 
+### <a name="type-compression">compression()</a> ###
+
+
+<pre><code>
+compression() = 0 | 2
+</code></pre>
+
+
+
+
+### <a name="type-compression_name">compression_name()</a> ###
+
+
+<pre><code>
+compression_name() = none | snappy
+</code></pre>
+
+
+
+
 ### <a name="type-pool_option">pool_option()</a> ###
 
 
@@ -96,7 +116,7 @@ protocol() = shackle_tcp | shackle_udp
 
 
 <pre><code>
-state() = #state{buffer = list(), buffer_count = non_neg_integer(), buffer_delay_max = undefined | pos_integer(), buffer_size = non_neg_integer(), buffer_size_max = undefined | pos_integer(), partitions = undefined | list(), name = atom(), parent = pid(), timer_ref = undefined | reference(), topic = <a href="#type-topic_name">topic_name()</a>}
+state() = #state{acks = 1..65535, buffer = list(), buffer_count = non_neg_integer(), buffer_delay_max = pos_integer(), buffer_size = non_neg_integer(), buffer_size_max = undefined | pos_integer(), compression = <a href="#type-compression">compression()</a>, partitions = undefined | list(), name = atom(), parent = pid(), timer_ref = undefined | reference(), topic = <a href="#type-topic_name">topic_name()</a>}
 </code></pre>
 
 
@@ -119,33 +139,53 @@ time() = pos_integer()
 topic_name() = binary()
 </code></pre>
 
+
+
+
+### <a name="type-topic_opt">topic_opt()</a> ###
+
+
+<pre><code>
+topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {pool_size, pos_integer()}
+</code></pre>
+
+
+
+
+### <a name="type-topic_opts">topic_opts()</a> ###
+
+
+<pre><code>
+topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
+</code></pre>
+
 <a name="index"></a>
 
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-3">init/3</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-2">start_link/2</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-4">init/4</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-3">start_link/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
 
 ## Function Details ##
 
-<a name="init-3"></a>
+<a name="init-4"></a>
 
-### init/3 ###
+### init/4 ###
 
 <pre><code>
-init(Parent::pid(), Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; no_return()
+init(Parent::pid(), Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>) -&gt; no_return()
 </code></pre>
 <br />
 
-<a name="start_link-2"></a>
+<a name="start_link-3"></a>
 
-### start_link/2 ###
+### start_link/3 ###
 
 <pre><code>
-start_link(Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; {ok, pid()}
+start_link(Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>) -&gt; {ok, pid()}
 </code></pre>
 <br />
 

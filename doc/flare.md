@@ -46,7 +46,7 @@ topic_name() = binary()
 ### produce/2 ###
 
 <pre><code>
-produce(Topic::<a href="#type-topic_name">topic_name()</a>, Msg::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
+produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
 </code></pre>
 <br />
 

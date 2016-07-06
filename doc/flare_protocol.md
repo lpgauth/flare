@@ -104,7 +104,7 @@ decode_produce(X1::binary()) -&gt; term()
 ### encode_message_set/1 ###
 
 <pre><code>
-encode_message_set(Msgs::binary() | [binary()]) -&gt; iolist()
+encode_message_set(Messages::binary() | [binary()]) -&gt; iolist()
 </code></pre>
 <br />
 
@@ -122,7 +122,7 @@ encode_metadata(CorrelationId::integer(), ClientId::iolist(), Topics::[iolist()]
 ### encode_produce/7 ###
 
 <pre><code>
-encode_produce(CorrelationId::integer(), ClientId::iolist(), Topic::<a href="#type-topic_name">topic_name()</a>, Partition::non_neg_integer(), Msgs::<a href="#type-msg">msg()</a>, Acks::integer(), Compression::<a href="#type-compression">compression()</a>) -&gt; iolist()
+encode_produce(CorrelationId::integer(), ClientId::iolist(), Topic::<a href="#type-topic_name">topic_name()</a>, Partition::non_neg_integer(), Messages::<a href="#type-msg">msg()</a>, Acks::integer(), Compression::<a href="#type-compression">compression()</a>) -&gt; iolist()
 </code></pre>
 <br />
 
