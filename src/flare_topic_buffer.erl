@@ -123,7 +123,7 @@ handle_msg(?MSG_METADATA, #state {
                 partitions = Partitions
             }};
         {error, Reason} ->
-            % TODO: retry or terminate or move upstream?
+            % TODO: retry / terminate / move upstream?
             shackle_utils:warning_msg(?CLIENT,
                 "metadata error: ~p~n", [Reason]),
             {ok, State}
@@ -165,7 +165,19 @@ handle_msg({produce, Message}, #state {
                 buffer_size = X
             }}
     end;
-handle_msg(#cast {client = ?CLIENT}, State) ->
+handle_msg(#cast {
+        client = ?CLIENT,
+        reply = {ok, _}
+    }, State) ->
+
+    {ok, State};
+% TODO: reload topic metadata on partition errors
+handle_msg(#cast {
+        client = ?CLIENT,
+        reply = {error, Reason}
+    }, State) ->
+
+    shackle_utils:warning_msg(?CLIENT, "client error: ~p~n", [Reason]),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
