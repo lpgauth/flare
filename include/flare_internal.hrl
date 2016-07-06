@@ -27,9 +27,11 @@
 -define(DEFAULT_BROKER_RECONNECT_MAX, timer:minutes(2)).
 -define(DEFAULT_BROKER_RECONNECT_MIN, timer:seconds(1)).
 -define(DEFAULT_TIMEOUT, timer:seconds(1)).
--define(DEFAULT_TOPIC_BUFFER_DELAY_MAX, timer:seconds(1)).
--define(DEFAULT_TOPIC_BUFFER_POOL_SIZE, 2).
--define(DEFAULT_TOPIC_BUFFER_SIZE_MAX, 10000).
+-define(DEFAULT_TOPIC_ACKS, 1).
+-define(DEFAULT_TOPIC_BUFFER_DELAY, timer:seconds(1)).
+-define(DEFAULT_TOPIC_BUFFER_SIZE, 10000).
+-define(DEFAULT_TOPIC_COMPRESSION, ?COMPRESSIONS_SNAPPY).
+-define(DEFAULT_TOPIC_POOL_SIZE, 2).
 
 %% ETS tables
 -define(ETS_TABLE_TOPIC, flare_topic).

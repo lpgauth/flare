@@ -6,8 +6,8 @@
 -compile({inline_size, 512}).
 
 -export([
-    init/3,
-    start_link/2
+    init/4,
+    start_link/3
 ]).
 
 %% sys behavior
@@ -22,11 +22,13 @@
 -define(COMPRESSION, ?COMPRESSIONS_SNAPPY).
 
 -record(state, {
+    acks             :: 1..65535,
     buffer = []      :: list(),
     buffer_count = 0 :: non_neg_integer(),
-    buffer_delay_max :: undefined | pos_integer(),
+    buffer_delay_max :: pos_integer(),
     buffer_size = 0  :: non_neg_integer(),
     buffer_size_max  :: undefined | pos_integer(),
+    compression      :: compression(),
     partitions       :: undefined | list(),
     name             :: atom(),
     parent           :: pid(),
@@ -37,34 +39,40 @@
 -type state() :: #state {}.
 
 %% public
--spec init(pid(), atom(), topic_name()) ->
+-spec init(pid(), atom(), topic_name(), topic_opts()) ->
     no_return().
 
-init(Parent, Name, Topic) ->
+init(Parent, Name, Topic, Opts) ->
     process_flag(trap_exit, true),
     register(Name, self()),
     proc_lib:init_ack(Parent, {ok, self()}),
 
     Name ! ?MSG_METADATA,
-    BufferDelayMax = ?GET_ENV(topic_buffer_max_delay,
-        ?DEFAULT_TOPIC_BUFFER_DELAY_MAX),
-    BufferSizeMax = ?GET_ENV(topic_buffer_max_size,
-        ?DEFAULT_TOPIC_BUFFER_SIZE_MAX),
+
+    Acks = ?LOOKUP(acks, Opts, ?DEFAULT_TOPIC_ACKS),
+    BufferDelayMax = ?LOOKUP(buffer_delay, Opts,
+        ?DEFAULT_TOPIC_BUFFER_DELAY),
+    BufferSizeMax = ?LOOKUP(buffer_size, Opts,
+        ?DEFAULT_TOPIC_BUFFER_SIZE),
+    Compression = ?LOOKUP(compression, Opts,
+        ?DEFAULT_TOPIC_COMPRESSION),
 
     loop(#state {
+        acks = Acks,
         buffer_delay_max = BufferDelayMax,
         buffer_size_max = BufferSizeMax,
+        compression = Compression,
         name = Name,
         parent = Parent,
         timer_ref = timer(BufferDelayMax),
         topic = Topic
     }).
 
--spec start_link(atom(), topic_name()) ->
+-spec start_link(atom(), topic_name(), topic_opts()) ->
     {ok, pid()}.
 
-start_link(Name, Topic) ->
-    proc_lib:start_link(?MODULE, init, [self(), Name, Topic]).
+start_link(Name, Topic, Opts) ->
+    proc_lib:start_link(?MODULE, init, [self(), Name, Topic, Opts]).
 
 %% sys callbacks
 -spec system_code_change(state(), module(), undefined | term(), term()) ->
@@ -162,6 +170,8 @@ loop(#state {parent = Parent} = State) ->
 
 produce([], _State) ->
     ok;
+produce(_Msgs, #state {partitions = undefined}) ->
+    ok;
 produce(Msgs, #state {
         partitions = Partitions,
         topic = Topic
@@ -173,8 +183,13 @@ produce(Msgs, #state {
     Cast = {produce, Topic, Partition, Msgs3, ?ACK, ?COMPRESSION},
     shackle:cast(PoolName, Cast).
 
-terminate(#state {timer_ref = TimerRef}) ->
+terminate(#state {
+        buffer = Buffer,
+        timer_ref = TimerRef
+    } = State) ->
+
     erlang:cancel_timer(TimerRef),
+    produce(Buffer, State),
     exit(shutdown).
 
 timer(Time) ->

@@ -52,5 +52,9 @@
 -type topic()              :: #topic {}.
 -type topic_name()         :: binary().
 -type topic_metadata()     :: #topic_metadata {}.
--type topic_opt()          :: {pool_size, pos_integer()}.
+-type topic_opt()          :: {acks, 0..65535} |
+                              {buffer_delay, pos_integer()} |
+                              {buffer_size, non_neg_integer()} |
+                              {compression, compression()} |
+                              {pool_size, pos_integer()}.
 -type topic_opts()         :: [topic_opt()].

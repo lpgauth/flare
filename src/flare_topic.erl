@@ -34,7 +34,6 @@ produce(Topic, Msg) ->
         undefined ->
             {error, topic_not_started};
         PoolSize ->
-            % TODO: optimize me
             N = shackle_utils:random(PoolSize) + 1,
             topic_buffer_msg(Topic, N, {produce, Msg}),
             ok
@@ -49,16 +48,15 @@ start(Topic) ->
 -spec start(topic_name(), topic_opts()) ->
     ok | {error, atom()}.
 
-% TODO: add ack and compression options
 start(Topic, Opts) ->
     PoolSize = ?LOOKUP(buffer_pool_size, Opts,
-        ?DEFAULT_TOPIC_BUFFER_POOL_SIZE),
+        ?DEFAULT_TOPIC_POOL_SIZE),
     case ets:insert_new(?ETS_TABLE_TOPIC, {Topic, PoolSize}) of
         false ->
             {error, topic_already_stated};
         true ->
             flare_compiler:topic_utils(),
-            start_topic_buffers(Topic, PoolSize),
+            start_topic_buffers(Topic, Opts, PoolSize),
             ok
     end.
 
@@ -80,16 +78,13 @@ stop(Topic) ->
     end.
 
 %% private
-start_topic_buffers(_Topic, 0) ->
+start_topic_buffers(_Topic, _Opts, 0) ->
     ok;
-start_topic_buffers(Topic, N) ->
-    start_topic_buffer(Topic, N),
-    start_topic_buffers(Topic, N - 1).
-
-start_topic_buffer(Topic, N) ->
+start_topic_buffers(Topic, Opts, N) ->
     Name = flare_topic_utils:server_name(Topic, N),
-    Spec = ?CHILD(Name, flare_topic_buffer, [Name, Topic]),
-    {ok, _Pid} = supervisor:start_child(?SUPERVISOR, Spec).
+    Spec = ?CHILD(Name, flare_topic_buffer, [Name, Topic, Opts]),
+    {ok, _Pid} = supervisor:start_child(?SUPERVISOR, Spec),
+    start_topic_buffers(Topic, Opts, N - 1).
 
 stop_topic_buffers(_Topic, 0) ->
     ok;
