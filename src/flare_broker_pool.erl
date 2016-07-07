@@ -37,7 +37,7 @@ start(Name, #broker {host = Host, port = Port}) ->
         {socket_options, [
             binary,
             {packet, 4},
-            {send_timeout, 50},
+            {send_timeout, 500},
             {send_timeout_close, true}
         ]}
     ], [
