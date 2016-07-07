@@ -13,7 +13,7 @@ High Performance Erlang Kafka Producer (best-effort)
 
 ## Disclamer
 
-This producer gives no waranty of message delivery / durability. 
+This producer gives no waranty of message delivery / durability.
 
 Conditions that may trigger data loss:
 - Connectivity issues
@@ -63,8 +63,8 @@ Conditions that may trigger data loss:
   </tr>
   <tr>
     <td>broker_reconnect_time_min</td>
-    <td>pos_integer()</td>
-    <td>1000</td>
+    <td>non_neg_integer()</td>
+    <td>0</td>
     <td>Minimum reconnect time (milliseconds)</td>
   </tr>
 </table>

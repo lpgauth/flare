@@ -25,7 +25,7 @@
 -define(DEFAULT_BROKER_POOL_STRATEGY, random).
 -define(DEFAULT_BROKER_RECONNECT, true).
 -define(DEFAULT_BROKER_RECONNECT_MAX, timer:minutes(2)).
--define(DEFAULT_BROKER_RECONNECT_MIN, timer:seconds(1)).
+-define(DEFAULT_BROKER_RECONNECT_MIN, 0).
 -define(DEFAULT_TIMEOUT, timer:seconds(1)).
 -define(DEFAULT_TOPIC_ACKS, 1).
 -define(DEFAULT_TOPIC_BUFFER_DELAY, timer:seconds(1)).
@@ -37,5 +37,4 @@
 -define(ETS_TABLE_TOPIC, flare_topic).
 
 %% msgs
--define(MSG_METADATA, metadata).
 -define(MSG_TIMEOUT, timeout).

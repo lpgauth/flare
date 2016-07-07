@@ -7,9 +7,10 @@
 -export([
     decode_metadata/1,
     decode_produce/1,
-    encode_produce/7,
-    encode_metadata/3,
-    encode_message_set/1
+    encode_produce/5,
+    encode_metadata/1,
+    encode_message_set/1,
+    encode_request/4
 ]).
 
 %% public
@@ -28,24 +29,20 @@ decode_produce(<<CorrelationId:32, Length:32, Rest/binary>>) ->
     {TopicArray, <<>>} = decode_topic_array(Length, [], Rest),
     {CorrelationId, TopicArray}.
 
--spec encode_produce(integer(), iolist(), topic_name(), non_neg_integer(),
+-spec encode_produce(topic_name(), non_neg_integer(),
     msg(), integer(), compression()) -> iolist().
 
-encode_produce(CorrelationId, ClientId, Topic, Partition, Messages, Acks,
-        Compression) ->
-
+encode_produce(Topic, Partition, Messages, Acks, Compression) ->
     MessageSet = encode_message_set(Messages, Compression),
     Partition2 = encode_partion(Partition, MessageSet),
     Topic2 = [[encode_string(Topic), encode_array([Partition2])]],
-    Request = [<<Acks:16, (?TIMEOUT):32>>, encode_array(Topic2)],
-    encode_request(?REQUEST_PRODUCE, CorrelationId, ClientId, Request).
+    [<<Acks:16, (?TIMEOUT):32>>, encode_array(Topic2)].
 
--spec encode_metadata(integer(), iolist(), [iolist()]) ->
+-spec encode_metadata([iolist()]) ->
     iolist().
 
-encode_metadata(CorrelationId, ClientId, Topics) ->
-    Request = encode_array([encode_string(Topic) || Topic <- Topics]),
-    encode_request(?REQUEST_METADATA, CorrelationId, ClientId, Request).
+encode_metadata(Topics) ->
+    encode_array([encode_string(Topic) || Topic <- Topics]).
 
 -spec encode_message_set(binary() | [binary()]) ->
     iolist().
@@ -65,6 +62,13 @@ encode_message_set([Message | T], Compression) ->
     Message2 = encode_message(Message, Compression),
     [[<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2],
         encode_message_set(T, Compression)].
+
+-spec encode_request(integer(), integer(), iolist(), iolist()) ->
+    iolist().
+
+encode_request(ApiKey, CorrelationId, ClientId, Request) ->
+    [<<ApiKey:16, ?API_VERSION:16, CorrelationId:32>>,
+        encode_string(ClientId), Request].
 
 %% private
 decode_broker(<<NodeId:32, Rest/binary>>) ->
@@ -181,10 +185,6 @@ encode_message(Message, Compresion) ->
 
 encode_partion(Partition, MessageSet) ->
     [<<Partition:32, (iolist_size(MessageSet)):32>>, MessageSet].
-
-encode_request(ApiKey, CorrelationId, ClientId, Request) ->
-    [<<ApiKey:16, ?API_VERSION:16, CorrelationId:32>>,
-        encode_string(ClientId), Request].
 
 encode_string(undefined) ->
     <<-1:16/signed>>;

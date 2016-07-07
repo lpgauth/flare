@@ -6,8 +6,8 @@
 -compile({inline_size, 512}).
 
 -export([
-    init/4,
-    start_link/3
+    init/5,
+    start_link/4
 ]).
 
 %% sys behavior
@@ -39,15 +39,13 @@
 -type state() :: #state {}.
 
 %% public
--spec init(pid(), atom(), topic_name(), topic_opts()) ->
+-spec init(pid(), atom(), topic_name(), topic_opts(), partition_tuples()) ->
     no_return().
 
-init(Parent, Name, Topic, Opts) ->
+init(Parent, Name, Topic, Opts, Partitions) ->
     process_flag(trap_exit, true),
     register(Name, self()),
     proc_lib:init_ack(Parent, {ok, self()}),
-
-    Name ! ?MSG_METADATA,
 
     Acks = ?LOOKUP(acks, Opts, ?DEFAULT_TOPIC_ACKS),
     BufferDelayMax = ?LOOKUP(buffer_delay, Opts,
@@ -64,15 +62,17 @@ init(Parent, Name, Topic, Opts) ->
         compression = Compression,
         name = Name,
         parent = Parent,
+        partitions = Partitions,
         timer_ref = timer(BufferDelayMax),
         topic = Topic
     }).
 
--spec start_link(atom(), topic_name(), topic_opts()) ->
+-spec start_link(atom(), topic_name(), topic_opts(), partition_tuples()) ->
     {ok, pid()}.
 
-start_link(Name, Topic, Opts) ->
-    proc_lib:start_link(?MODULE, init, [self(), Name, Topic, Opts]).
+start_link(Name, Topic, Opts, Partitions) ->
+    InitOpts = [self(), Name, Topic, Opts, Partitions],
+    proc_lib:start_link(?MODULE, init, InitOpts).
 
 %% sys callbacks
 -spec system_code_change(state(), module(), undefined | term(), term()) ->
@@ -111,23 +111,6 @@ compression(none) ->
 compression(snappy) ->
     ?COMPRESSION_SNAPPY.
 
-handle_msg(?MSG_METADATA, #state {
-        topic = Topic
-    } = State) ->
-
-    case flare_metadata:partitions(Topic) of
-        {ok, Partitions} ->
-            flare_broker_pool:start(Partitions),
-
-            {ok, State#state {
-                partitions = Partitions
-            }};
-        {error, Reason} ->
-            % TODO: retry / terminate / move upstream?
-            shackle_utils:warning_msg(?CLIENT,
-                "metadata error: ~p~n", [Reason]),
-            {ok, State}
-    end;
 handle_msg(?MSG_TIMEOUT, #state {
         buffer = Buffer,
         buffer_delay_max = BufferDelayMax
@@ -196,6 +179,7 @@ produce([], _State) ->
 produce(_Messages, #state {partitions = undefined}) ->
     ok;
 produce(Messages, #state {
+        acks = Acks,
         compression = Compression,
         partitions = Partitions,
         topic = Topic
@@ -204,8 +188,9 @@ produce(Messages, #state {
     Messages2 = flare_protocol:encode_message_set(lists:reverse(Messages)),
     Messages3 = compress(Compression, Messages2),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
-    Cast = {produce, Topic, Partition, Messages3, ?ACK, ?COMPRESSION},
-    shackle:cast(PoolName, Cast).
+    Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
+        Acks, Compression),
+    shackle:cast(PoolName, {produce, Request}).
 
 terminate(#state {
         buffer = Buffer,

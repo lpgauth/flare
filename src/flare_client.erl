@@ -35,14 +35,13 @@ setup(_Socket, State) ->
 -spec handle_request(term(), state()) ->
     {ok, non_neg_integer(), iolist(), state()}.
 
-handle_request({produce, Topic, Partition, Msgs, Acks, Compression}, #state {
+handle_request({produce, Request}, #state {
         request_counter = RequestCounter
     } = State) ->
 
     RequestId = request_id(RequestCounter),
-    % TODO: split encoding in two phase (MessageSet outside of client)
-    Data = flare_protocol:encode_produce(RequestId, ?CLIENT_ID, Topic,
-        Partition, Msgs, Acks, Compression),
+    Data = flare_protocol:encode_request(?REQUEST_PRODUCE,
+        RequestId, ?CLIENT_ID, Request),
 
     {ok, RequestId, Data, State#state {
         request_counter = RequestCounter + 1
@@ -53,8 +52,9 @@ handle_request({produce, Topic, Partition, Msgs, Acks, Compression}, #state {
 
 handle_data(Data, State) ->
     {CorrelationId, [{topic, Topic, [
-            {partition, Partition, ErrorCode, Offset}
-        ]}]} = flare_protocol:decode_produce(Data),
+        {partition, Partition, ErrorCode, Offset}
+    ]}]} = flare_protocol:decode_produce(Data),
+
     Response = {ok, {Topic, Partition, ErrorCode, Offset}},
     {ok, [{CorrelationId, Response}], State}.
 

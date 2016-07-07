@@ -55,9 +55,15 @@ start(Topic, Opts) ->
         false ->
             {error, topic_already_stated};
         true ->
-            flare_compiler:topic_utils(),
-            start_topic_buffers(Topic, Opts, PoolSize),
-            ok
+            case flare_metadata:partitions(Topic) of
+                {ok, Partitions} ->
+                    flare_broker_pool:start(Partitions),
+                    flare_compiler:topic_utils(),
+                    start_topic_buffers(Topic, Opts, Partitions, PoolSize),
+                    ok;
+                {error, Reason} ->
+                    {error, Reason}
+            end
     end.
 
 -spec stop(topic_name()) ->
@@ -78,13 +84,13 @@ stop(Topic) ->
     end.
 
 %% private
-start_topic_buffers(_Topic, _Opts, 0) ->
+start_topic_buffers(_Topic, _Opts, _Partitions, 0) ->
     ok;
-start_topic_buffers(Topic, Opts, N) ->
+start_topic_buffers(Topic, Opts, Partitions, N) ->
     Name = flare_topic_utils:server_name(Topic, N),
-    Spec = ?CHILD(Name, flare_topic_buffer, [Name, Topic, Opts]),
+    Spec = ?CHILD(Name, flare_topic_buffer, [Name, Topic, Opts, Partitions]),
     {ok, _Pid} = supervisor:start_child(?SUPERVISOR, Spec),
-    start_topic_buffers(Topic, Opts, N - 1).
+    start_topic_buffers(Topic, Opts, Partitions, N - 1).
 
 stop_topic_buffers(_Topic, 0) ->
     ok;

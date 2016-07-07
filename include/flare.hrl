@@ -49,6 +49,8 @@
 -type msg()                :: binary().
 -type partition()          :: #partition {}.
 -type partition_id()       :: non_neg_integer().
+-type partition_tuple()    :: {partition_id(), atom(), broker()}.
+-type partition_tuples()   :: [partition_tuple()].
 -type partition_metadata() :: #partition_metadata {}.
 -type topic()              :: #topic {}.
 -type topic_name()         :: binary().

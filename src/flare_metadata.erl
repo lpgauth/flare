@@ -7,7 +7,7 @@
 
 %% public
 -spec partitions(topic_name()) ->
-    {ok, [{partition_id(), atom(), broker()}]} | {error, term()}.
+    {ok, partition_tuples()} | {error, term()}.
 
 partitions(Topic) ->
     case topic(Topic) of
@@ -45,7 +45,9 @@ topic(Topic) ->
 topic([], _Topic) ->
     {error, no_metadata};
 topic([{Ip, Port} | T], Topic) ->
-    Data = flare_protocol:encode_metadata(0, ?CLIENT_ID, [Topic]),
+    Request = flare_protocol:encode_metadata([Topic]),
+    Data = flare_protocol:encode_request(?REQUEST_METADATA, 0,
+        ?CLIENT_ID, Request),
     case flare_utils:send_recv(Ip, Port, Data) of
         {ok, Data2} ->
             {0, Brokers, TopicMetadata} =
