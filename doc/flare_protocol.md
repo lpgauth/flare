@@ -74,7 +74,7 @@ topic_name() = binary()
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#decode_metadata-1">decode_metadata/1</a></td><td></td></tr><tr><td valign="top"><a href="#decode_produce-1">decode_produce/1</a></td><td></td></tr><tr><td valign="top"><a href="#encode_message_set-1">encode_message_set/1</a></td><td></td></tr><tr><td valign="top"><a href="#encode_metadata-3">encode_metadata/3</a></td><td></td></tr><tr><td valign="top"><a href="#encode_produce-7">encode_produce/7</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#decode_metadata-1">decode_metadata/1</a></td><td></td></tr><tr><td valign="top"><a href="#decode_produce-1">decode_produce/1</a></td><td></td></tr><tr><td valign="top"><a href="#encode_message_set-1">encode_message_set/1</a></td><td></td></tr><tr><td valign="top"><a href="#encode_metadata-1">encode_metadata/1</a></td><td></td></tr><tr><td valign="top"><a href="#encode_produce-5">encode_produce/5</a></td><td></td></tr><tr><td valign="top"><a href="#encode_request-4">encode_request/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -108,21 +108,30 @@ encode_message_set(Messages::binary() | [binary()]) -&gt; iolist()
 </code></pre>
 <br />
 
-<a name="encode_metadata-3"></a>
+<a name="encode_metadata-1"></a>
 
-### encode_metadata/3 ###
+### encode_metadata/1 ###
 
 <pre><code>
-encode_metadata(CorrelationId::integer(), ClientId::iolist(), Topics::[iolist()]) -&gt; iolist()
+encode_metadata(Topics::[iolist()]) -&gt; iolist()
 </code></pre>
 <br />
 
-<a name="encode_produce-7"></a>
+<a name="encode_produce-5"></a>
 
-### encode_produce/7 ###
+### encode_produce/5 ###
 
 <pre><code>
-encode_produce(CorrelationId::integer(), ClientId::iolist(), Topic::<a href="#type-topic_name">topic_name()</a>, Partition::non_neg_integer(), Messages::<a href="#type-msg">msg()</a>, Acks::integer(), Compression::<a href="#type-compression">compression()</a>) -&gt; iolist()
+encode_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Partition::non_neg_integer(), Messages::<a href="#type-msg">msg()</a>, Acks::integer(), Compression::<a href="#type-compression">compression()</a>) -&gt; iolist()
+</code></pre>
+<br />
+
+<a name="encode_request-4"></a>
+
+### encode_request/4 ###
+
+<pre><code>
+encode_request(ApiKey::integer(), CorrelationId::integer(), ClientId::iolist(), Request::iolist()) -&gt; iolist()
 </code></pre>
 <br />
 

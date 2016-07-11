@@ -7,7 +7,7 @@ before_install:
     --create --zookeeper localhost:2181 \
     --replication-factor 1 \
     --partitions 1 \
-    --topic test && break || sleep 2; done
+    --topic test && break || sleep 5; done
   - cd $TRAVIS_BUILD_DIR
 cache:
   directories:

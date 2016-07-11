@@ -1,5 +1,5 @@
 %% encoding: UTF-8
 {application,flare}.
 {modules,[flare,flare_app,flare_broker_pool,flare_client,flare_compiler,
-          flare_metadata,flare_protocol,flare_sup,flare_topic,
+          flare_metadata,flare_protocol,flare_response,flare_sup,flare_topic,
           flare_topic_buffer,flare_utils]}.

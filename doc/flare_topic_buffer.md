@@ -22,6 +22,16 @@ backlog_size() = pos_integer() | infinity
 
 
 
+### <a name="type-broker">broker()</a> ###
+
+
+<pre><code>
+broker() = #broker{node_id = non_neg_integer(), host = binary(), port = pos_integer()}
+</code></pre>
+
+
+
+
 ### <a name="type-client_option">client_option()</a> ###
 
 
@@ -57,6 +67,36 @@ compression() = 0 | 2
 
 <pre><code>
 compression_name() = none | snappy
+</code></pre>
+
+
+
+
+### <a name="type-partition_id">partition_id()</a> ###
+
+
+<pre><code>
+partition_id() = non_neg_integer()
+</code></pre>
+
+
+
+
+### <a name="type-partition_tuple">partition_tuple()</a> ###
+
+
+<pre><code>
+partition_tuple() = {<a href="#type-partition_id">partition_id()</a>, atom(), <a href="#type-broker">broker()</a>}
+</code></pre>
+
+
+
+
+### <a name="type-partition_tuples">partition_tuples()</a> ###
+
+
+<pre><code>
+partition_tuples() = [<a href="#type-partition_tuple">partition_tuple()</a>]
 </code></pre>
 
 
@@ -164,28 +204,28 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-4">init/4</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-3">start_link/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-5">init/5</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
 
 ## Function Details ##
 
-<a name="init-4"></a>
+<a name="init-5"></a>
 
-### init/4 ###
+### init/5 ###
 
 <pre><code>
-init(Parent::pid(), Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>) -&gt; no_return()
+init(Parent::pid(), Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; no_return()
 </code></pre>
 <br />
 
-<a name="start_link-3"></a>
+<a name="start_link-4"></a>
 
-### start_link/3 ###
+### start_link/4 ###
 
 <pre><code>
-start_link(Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>) -&gt; {ok, pid()}
+start_link(Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; {ok, pid()}
 </code></pre>
 <br />
 

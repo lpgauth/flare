@@ -32,6 +32,26 @@ partition_id() = non_neg_integer()
 
 
 
+### <a name="type-partition_tuple">partition_tuple()</a> ###
+
+
+<pre><code>
+partition_tuple() = {<a href="#type-partition_id">partition_id()</a>, atom(), <a href="#type-broker">broker()</a>}
+</code></pre>
+
+
+
+
+### <a name="type-partition_tuples">partition_tuples()</a> ###
+
+
+<pre><code>
+partition_tuples() = [<a href="#type-partition_tuple">partition_tuple()</a>]
+</code></pre>
+
+
+
+
 ### <a name="type-topic_name">topic_name()</a> ###
 
 
@@ -56,7 +76,7 @@ topic_name() = binary()
 ### partitions/1 ###
 
 <pre><code>
-partitions(Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; {ok, [{<a href="#type-partition_id">partition_id()</a>, atom(), <a href="#type-broker">broker()</a>}]} | {error, term()}
+partitions(Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; {ok, <a href="#type-partition_tuples">partition_tuples()</a>} | {error, term()}
 </code></pre>
 <br />
 
