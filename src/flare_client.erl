@@ -51,10 +51,9 @@ handle_request({produce, Request}, #state {
     {ok, [{pos_integer(), term()}], state()}.
 
 handle_data(Data, State) ->
-    {CorrelationId, [{topic, Topic, [
-        {partition, Partition, ErrorCode, Offset}
-    ]}]} = flare_protocol:decode_produce(Data),
-
+    {CorrelationId, [{topic, Topic, Partitions}]} =
+        flare_protocol:decode_produce(Data),
+    [{partition, Partition, ErrorCode, Offset}] = Partitions,
     Response = {ok, {Topic, Partition, ErrorCode, Offset}},
     {ok, [{CorrelationId, Response}], State}.
 

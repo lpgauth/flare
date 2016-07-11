@@ -49,16 +49,16 @@ start(Topic) ->
     ok | {error, atom()}.
 
 start(Topic, Opts) ->
-    PoolSize = ?LOOKUP(buffer_pool_size, Opts,
+    PoolSize = ?LOOKUP(pool_size, Opts,
         ?DEFAULT_TOPIC_POOL_SIZE),
     case ets:insert_new(?ETS_TABLE_TOPIC, {Topic, PoolSize}) of
         false ->
             {error, topic_already_stated};
         true ->
+            flare_compiler:topic_utils(),
             case flare_metadata:partitions(Topic) of
                 {ok, Partitions} ->
                     flare_broker_pool:start(Partitions),
-                    flare_compiler:topic_utils(),
                     start_topic_buffers(Topic, Opts, Partitions, PoolSize),
                     ok;
                 {error, Reason} ->
@@ -101,4 +101,9 @@ stop_topic_buffers(Topic, N) ->
     stop_topic_buffers(Topic, N - 1).
 
 topic_buffer_msg(Topic, Index, Message) ->
-    flare_topic_utils:server_name(Topic, Index) ! Message.
+    case whereis(flare_topic_utils:server_name(Topic, Index)) of
+        undefined ->
+            ok;
+        Pid ->
+            Pid ! Message
+    end.

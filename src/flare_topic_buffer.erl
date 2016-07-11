@@ -18,9 +18,6 @@
     system_terminate/4
 ]).
 
--define(ACK, 1).
--define(COMPRESSION, ?COMPRESSION_SNAPPY).
-
 -record(state, {
     acks             :: 1..65535,
     buffer = []      :: list(),
@@ -52,7 +49,7 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         ?DEFAULT_TOPIC_BUFFER_DELAY),
     BufferSizeMax = ?LOOKUP(buffer_size, Opts,
         ?DEFAULT_TOPIC_BUFFER_SIZE),
-    Compression = compression(?LOOKUP(compression, Opts,
+    Compression = flare_utils:compression(?LOOKUP(compression, Opts,
         ?DEFAULT_TOPIC_COMPRESSION)),
 
     loop(#state {
@@ -100,17 +97,6 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
     exit(Reason).
 
 %% private
-compress(?COMPRESSION_NONE, Messages) ->
-    Messages;
-compress(?COMPRESSION_SNAPPY, Messages) ->
-    {ok, Messages2} = snappy:compress(Messages),
-    Messages2.
-
-compression(none) ->
-    ?COMPRESSION_NONE;
-compression(snappy) ->
-    ?COMPRESSION_SNAPPY.
-
 handle_msg(?MSG_TIMEOUT, #state {
         buffer = Buffer,
         buffer_delay_max = BufferDelayMax
@@ -150,17 +136,24 @@ handle_msg({produce, Message}, #state {
     end;
 handle_msg(#cast {
         client = ?CLIENT,
-        reply = {ok, _}
+        reply = {ok, {_, _, ErrorCode, _}}
     }, State) ->
 
+    case flare_response:error_code(ErrorCode) of
+        ok ->
+            ok;
+        {error, _Reason} ->
+            % TODO: reload topic metadata on partition errors
+            % TODO: retry certain errors
+            ok
+    end,
     {ok, State};
-% TODO: reload topic metadata on partition errors
 handle_msg(#cast {
         client = ?CLIENT,
-        reply = {error, Reason}
+        reply = {error, _Reason}
     }, State) ->
 
-    shackle_utils:warning_msg(?CLIENT, "client error: ~p~n", [Reason]),
+    % TODO: retry certain errors
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -186,7 +179,7 @@ produce(Messages, #state {
     }) ->
 
     Messages2 = flare_protocol:encode_message_set(lists:reverse(Messages)),
-    Messages3 = compress(Compression, Messages2),
+    Messages3 = flare_utils:compress(Compression, Messages2),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
         Acks, Compression),
