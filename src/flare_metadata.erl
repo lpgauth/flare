@@ -12,7 +12,7 @@
 partitions(Topic) ->
     case topic(Topic) of
         {ok, {_Brokers, [#topic_metadata {partion_metadata = []}]}} ->
-            [];
+            {ok, []};
         {ok, {Brokers, [#topic_metadata {
                 partion_metadata = PartitionMetadata
             }]}} ->

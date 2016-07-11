@@ -30,7 +30,7 @@ decode_produce(<<CorrelationId:32, Length:32, Rest/binary>>) ->
     {CorrelationId, TopicArray}.
 
 -spec encode_produce(topic_name(), non_neg_integer(),
-    msg(), integer(), compression()) -> iolist().
+    msg() | [msg()], integer(), compression()) -> iolist().
 
 encode_produce(Topic, Partition, Messages, Acks, Compression) ->
     MessageSet = encode_message_set(Messages, Compression),
@@ -50,7 +50,7 @@ encode_metadata(Topics) ->
 encode_message_set(Messages) ->
     encode_message_set(Messages, 0).
 
--spec encode_message_set(binary() | [binary()], compression()) ->
+-spec encode_message_set(msg() | [msg()], compression()) ->
     iolist().
 
 encode_message_set([], _Compression) ->
