@@ -4,6 +4,15 @@ REBAR3=./bin/rebar3
 
 all: compile
 
+bench:
+	@echo "Benchmarking..."
+	@$(REBAR3) as test compile
+	@erl -noshell \
+	     -pa _build/test/lib/*/ebin \
+	     -pa _build/test/lib/*/test \
+	     -eval 'flare_bench:run()' \
+	     -eval 'init:stop()'
+
 clean:
 	@echo "Running rebar3 clean..."
 	@$(REBAR3) clean -a
@@ -51,4 +60,4 @@ xref:
 	@echo "Running rebar3 xref..."
 	@$(REBAR3) xref
 
-.PHONY: clean compile coveralls dialyzer edoc elvis eunit profile xref
+.PHONY: bench clean compile coveralls dialyzer edoc elvis eunit profile xref
