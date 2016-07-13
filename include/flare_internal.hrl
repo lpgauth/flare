@@ -24,16 +24,17 @@
 -define(DEFAULT_BROKER_POOL_SIZE, 2).
 -define(DEFAULT_BROKER_POOL_STRATEGY, random).
 -define(DEFAULT_BROKER_RECONNECT, true).
--define(DEFAULT_BROKER_RECONNECT_MAX, timer:minutes(2)).
+-define(DEFAULT_BROKER_RECONNECT_MAX, 120000).
 -define(DEFAULT_BROKER_RECONNECT_MIN, 0).
--define(DEFAULT_TIMEOUT, timer:seconds(1)).
+-define(DEFAULT_TIMEOUT, 1000).
 -define(DEFAULT_TOPIC_ACKS, 1).
--define(DEFAULT_TOPIC_BUFFER_DELAY, timer:seconds(1)).
+-define(DEFAULT_TOPIC_BUFFER_DELAY, 1000).
 -define(DEFAULT_TOPIC_BUFFER_SIZE, 10000).
 -define(DEFAULT_TOPIC_COMPRESSION, snappy).
 -define(DEFAULT_TOPIC_POOL_SIZE, 2).
 
 %% ETS tables
+-define(ETS_TABLE_QUEUE, flare_queue).
 -define(ETS_TABLE_TOPIC, flare_topic).
 
 %% msgs

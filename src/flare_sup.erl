@@ -20,5 +20,7 @@ start_link() ->
 -spec init([]) -> {ok, {{one_for_one, 5, 10}, []}}.
 
 init([]) ->
+    flare_queue:init(),
     flare_topic:init(),
+
     {ok, {{one_for_one, 5, 10}, []}}.

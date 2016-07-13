@@ -8,7 +8,7 @@
 
 -export([
     init/0,
-    produce/2,
+    server/1,
     start/1,
     start/2,
     stop/1
@@ -26,18 +26,17 @@ init() ->
     ]),
     ok.
 
--spec produce(topic_name(), msg()) ->
-    ok | {error, atom()}.
+-spec server(topic_name()) ->
+    {ok, buffer_name()} | {error, atom()}.
 
-produce(Topic, Message) ->
+server(Topic) ->
     case flare_utils:ets_lookup_element(?ETS_TABLE_TOPIC, Topic) of
         undefined ->
             {error, topic_not_started};
         PoolSize ->
-            N = shackle_utils:random(PoolSize) + 1,
-            topic_buffer_msg(Topic, N, {produce, Message}),
-            ok
-        end.
+            N = shackle_utils:random(PoolSize),
+            {ok, flare_topic_utils:server_name(Topic, N)}
+    end.
 
 -spec start(topic_name()) ->
     ok | {error, atom()}.
@@ -99,11 +98,3 @@ stop_topic_buffers(Topic, N) ->
     ok = supervisor:terminate_child(?SUPERVISOR, Name),
     ok = supervisor:delete_child(?SUPERVISOR, Name),
     stop_topic_buffers(Topic, N - 1).
-
-topic_buffer_msg(Topic, Index, Message) ->
-    case whereis(flare_topic_utils:server_name(Topic, Index)) of
-        undefined ->
-            ok;
-        Pid ->
-            Pid ! Message
-    end.

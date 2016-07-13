@@ -81,15 +81,20 @@
 
 %% types
 -type broker()             :: #broker {}.
+-type buffer_name()        :: atom().
 -type compression_name()   :: none | snappy.
 -type compression()        :: ?COMPRESSION_NONE |
                               ?COMPRESSION_SNAPPY.
+-type ext_req_id()         :: shackle:request_id().
 -type msg()                :: binary().
 -type partition()          :: #partition {}.
 -type partition_id()       :: non_neg_integer().
 -type partition_tuple()    :: {partition_id(), atom(), broker()}.
 -type partition_tuples()   :: [partition_tuple()].
 -type partition_metadata() :: #partition_metadata {}.
+-type request()            :: {req_id(), pid()}.
+-type requests()           :: [request()].
+-type req_id()             :: {atom(), reference()}.
 -type topic()              :: #topic {}.
 -type topic_name()         :: binary().
 -type topic_metadata()     :: #topic_metadata {}.

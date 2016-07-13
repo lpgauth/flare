@@ -16,7 +16,7 @@ produce_subtest() ->
     Topic = <<"test">>,
     ok = flare_topic:start(Topic),
     {error, topic_already_stated} = flare_topic:start(Topic),
-    [flare:produce(Topic, <<"event1">>) || _ <- lists:seq(1, 10000)],
+    [flare:async_produce(Topic, <<"event1">>) || _ <- lists:seq(1, 10000)],
     timer:sleep(1000),
     flare:produce(Topic, <<"event1">>),
     timer:sleep(1000),

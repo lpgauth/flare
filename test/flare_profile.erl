@@ -24,11 +24,10 @@ fprofx() ->
     flare_app:start(),
     Topic = <<"test">>,
     ok = flare_topic:start(Topic),
-    timer:sleep(1000),
 
     Self = self(),
     [spawn(fun () ->
-        [flare:produce(Topic, <<"event1">>) || _ <- lists:seq(1, ?N)],
+        [flare:async_produce(Topic, <<"event1">>) || _ <- lists:seq(1, ?N)],
         Self ! exit
     end) || _ <- lists:seq(1, ?P)],
     wait(),

@@ -29,6 +29,7 @@
     partitions       :: undefined | list(),
     name             :: atom(),
     parent           :: pid(),
+    requests = []    :: requests(),
     timer_ref        :: undefined | reference(),
     topic            :: topic_name()
 }).
@@ -36,8 +37,8 @@
 -type state() :: #state {}.
 
 %% public
--spec init(pid(), atom(), topic_name(), topic_opts(), partition_tuples()) ->
-    no_return().
+-spec init(pid(), buffer_name(), topic_name(), topic_opts(),
+        partition_tuples()) -> no_return().
 
 init(Parent, Name, Topic, Opts, Partitions) ->
     process_flag(trap_exit, true),
@@ -64,8 +65,8 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         topic = Topic
     }).
 
--spec start_link(atom(), topic_name(), topic_opts(), partition_tuples()) ->
-    {ok, pid()}.
+-spec start_link(buffer_name(), topic_name(), topic_opts(),
+        partition_tuples()) -> {ok, pid()}.
 
 start_link(Name, Topic, Opts, Partitions) ->
     InitOpts = [self(), Name, Topic, Opts, Partitions],
@@ -99,61 +100,75 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
 %% private
 handle_msg(?MSG_TIMEOUT, #state {
         buffer = Buffer,
-        buffer_delay_max = BufferDelayMax
+        buffer_delay_max = BufferDelayMax,
+        name = Name,
+        requests = Requests
     } = State) ->
 
-    produce(Buffer, State),
+    {ok, ReqId} = produce(Buffer, State),
+    flare_queue:add(Name, ReqId, Requests),
 
     {ok, State#state {
         buffer = [],
         buffer_count = 0,
         buffer_size = 0,
+        requests = [],
         timer_ref = timer(BufferDelayMax)
     }};
-handle_msg({produce, Message}, #state {
+handle_msg({produce, ReqId, Message, Pid}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
-        buffer_size_max = SizeMax
+        buffer_size_max = SizeMax,
+        name = Name,
+        requests = Requests
     } = State) ->
 
     Buffer2 = [Message | Buffer],
+    Requests2 = [{ReqId, Pid} | Requests],
+
     case BufferSize + iolist_size(Message) of
         X  when X > SizeMax ->
-            produce(Buffer2, State),
+            {ok, ReqId2} = produce(Buffer2, State),
+            flare_queue:add(Name, ReqId2, Requests2),
 
             {ok, State#state {
                 buffer = [],
                 buffer_count = 0,
-                buffer_size = 0
+                buffer_size = 0,
+                requests = []
             }};
         X ->
             {ok, State#state {
                 buffer = Buffer2,
                 buffer_count = BufferCount + 1,
-                buffer_size = X
+                buffer_size = X,
+                requests = Requests2
             }}
     end;
 handle_msg(#cast {
         client = ?CLIENT,
-        reply = {ok, {_, _, ErrorCode, _}}
-    }, State) ->
+        reply = {ok, {_, _, ErrorCode, _}},
+        request_id = ReqId
+    }, #state {name = Name} = State) ->
 
     case flare_response:error_code(ErrorCode) of
         ok ->
-            ok;
-        {error, _Reason} ->
+            reply_all(Name, ReqId, ok);
+        {error, Reason} ->
             % TODO: reload topic metadata on partition errors
             % TODO: retry certain errors
-            ok
+            reply_all(Name, ReqId, {error, Reason})
     end,
     {ok, State};
 handle_msg(#cast {
         client = ?CLIENT,
-        reply = {error, _Reason}
-    }, State) ->
+        reply = Reply,
+        request_id = ReqId
+    }, #state {name = Name} = State) ->
 
     % TODO: retry certain errors
+    reply_all(Name, ReqId, Reply),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -168,9 +183,9 @@ loop(#state {parent = Parent} = State) ->
     end.
 
 produce([], _State) ->
-    ok;
+    {ok, undefined};
 produce(_Messages, #state {partitions = undefined}) ->
-    ok;
+    {ok, undefined};
 produce(Messages, #state {
         acks = Acks,
         compression = Compression,
@@ -184,6 +199,17 @@ produce(Messages, #state {
     Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
         Acks, Compression),
     shackle:cast(PoolName, {produce, Request}).
+
+reply(Pid, ReqId, Reply) ->
+    Pid ! {ReqId, Reply}.
+
+reply_all(Name, ExtReqId, Reply) ->
+    case flare_queue:remove(Name, ExtReqId) of
+        {ok, Requests} ->
+            [reply(Pid, ReqId, Reply) || {ReqId, Pid} <- Requests];
+        {error, not_found} ->
+            ok
+    end.
 
 terminate(#state {
         buffer = Buffer,

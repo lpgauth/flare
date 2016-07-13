@@ -176,7 +176,7 @@ encode_array(Array) ->
 encode_bytes(undefined) ->
     <<-1:32/signed>>;
 encode_bytes(Data) ->
-    [<<(iolist_size(Data)):32>>, Data].
+    [<<(size(Data)):32>>, Data].
 
 encode_message(Message, Compresion) ->
     Message2 = [<<?API_VERSION:8, Compresion:8>>, encode_bytes(undefined),
@@ -188,5 +188,7 @@ encode_partion(Partition, MessageSet) ->
 
 encode_string(undefined) ->
     <<-1:16/signed>>;
+encode_string(Data) when is_binary(Data) ->
+    [<<(size(Data)):16>>, Data];
 encode_string(Data) ->
-    [<<(iolist_size(Data)):16>>, Data].
+    [<<(length(Data)):16>>, Data].
