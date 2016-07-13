@@ -233,7 +233,7 @@ retry(ExtReqId, Request) ->
     case flare_queue:remove(ExtReqId) of
         {ok, {PoolName, Requests}} ->
             {ok, ExtReqId2} = shackle:cast(PoolName, Request),
-            flare_queue:add(ExtReqId2, {PoolName, Requests});
+            flare_queue:add(ExtReqId2, PoolName, Requests);
         {error, not_found} ->
             shackle_utils:warning_msg(?CLIENT, "retry error: ~p~n",
                 [not_found]),

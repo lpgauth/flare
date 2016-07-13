@@ -124,7 +124,11 @@ Conditions that may trigger data loss:
 ok
 4> flare:produce(<<"my topic">>, <<"my msg">>).
 ok
-5> flare_topic:stop(<<"my topic">>).
+5> {ok, ReqId} = flare:async_produce(<<"test">>, <<"hello">>).
+{ok,{{1468,419385,705022},<0.146.0>}}
+6> flare:receive_response(ReqId).
+ok
+7> flare_topic:stop(<<"my topic">>).
 ok
 ```
 

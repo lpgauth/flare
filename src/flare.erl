@@ -8,7 +8,9 @@
     async_produce/2,
     async_produce/3,
     produce/2,
-    produce/3
+    produce/3,
+    receive_response/1,
+    receive_response/2
 ]).
 
 %% public
@@ -48,6 +50,15 @@ produce(Topic, Message, Timeout) ->
         {error, Reason} ->
             {error, Reason}
     end.
+
+-spec receive_response(req_id()) ->
+    ok | {error, atom()}.
+
+receive_response(ReqId) ->
+    receive_response(ReqId, ?DEFAULT_TIMEOUT).
+
+-spec receive_response(req_id(), pos_integer()) ->
+    ok | {error, atom()}.
 
 receive_response(ReqId, Timeout) ->
     receive

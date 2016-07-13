@@ -16,7 +16,7 @@
     {send_timeout_close, true}
 ]).
 -define(SUPERVISOR, flare_sup).
--define(TIMEOUT, timer:seconds(5)).
+-define(TIMEOUT, 5000).
 
 %% defaults
 -define(DEFAULT_BROKER_BOOTSTRAP_SERVERS, [{"127.0.0.1", 9092}]).

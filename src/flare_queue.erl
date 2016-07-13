@@ -26,7 +26,7 @@ init() ->
     ok.
 
 -spec remove(ext_req_id()) ->
-    {ok, requests()} | {error, not_found}.
+    {ok, {atom(), requests()}} | {error, not_found}.
 
 remove(ExtReqId) ->
     case ets_take(?ETS_TABLE_QUEUE, ExtReqId) of
