@@ -32,6 +32,16 @@ broker() = #broker{node_id = non_neg_integer(), host = binary(), port = pos_inte
 
 
 
+### <a name="type-buffer_name">buffer_name()</a> ###
+
+
+<pre><code>
+buffer_name() = atom()
+</code></pre>
+
+
+
+
 ### <a name="type-client_option">client_option()</a> ###
 
 
@@ -152,11 +162,41 @@ protocol() = shackle_tcp | shackle_udp
 
 
 
+### <a name="type-req_id">req_id()</a> ###
+
+
+<pre><code>
+req_id() = {<a href="erlang.md#type-timestamp">erlang:timestamp()</a>, pid()}
+</code></pre>
+
+
+
+
+### <a name="type-request">request()</a> ###
+
+
+<pre><code>
+request() = {<a href="#type-req_id">req_id()</a>, pid()}
+</code></pre>
+
+
+
+
+### <a name="type-requests">requests()</a> ###
+
+
+<pre><code>
+requests() = [<a href="#type-request">request()</a>]
+</code></pre>
+
+
+
+
 ### <a name="type-state">state()</a> ###
 
 
 <pre><code>
-state() = #state{acks = 1..65535, buffer = list(), buffer_count = non_neg_integer(), buffer_delay_max = pos_integer(), buffer_size = non_neg_integer(), buffer_size_max = undefined | pos_integer(), compression = <a href="#type-compression">compression()</a>, partitions = undefined | list(), name = atom(), parent = pid(), timer_ref = undefined | reference(), topic = <a href="#type-topic_name">topic_name()</a>}
+state() = #state{acks = 1..65535, buffer = list(), buffer_count = non_neg_integer(), buffer_delay_max = pos_integer(), buffer_size = non_neg_integer(), buffer_size_max = undefined | pos_integer(), compression = <a href="#type-compression">compression()</a>, partitions = undefined | list(), name = atom(), parent = pid(), requests = <a href="#type-requests">requests()</a>, timer_ref = undefined | reference(), topic = <a href="#type-topic_name">topic_name()</a>}
 </code></pre>
 
 
@@ -216,7 +256,7 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ### init/5 ###
 
 <pre><code>
-init(Parent::pid(), Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; no_return()
+init(Parent::pid(), Name::<a href="#type-buffer_name">buffer_name()</a>, Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; no_return()
 </code></pre>
 <br />
 
@@ -225,7 +265,7 @@ init(Parent::pid(), Name::atom(), Topic::<a href="#type-topic_name">topic_name()
 ### start_link/4 ###
 
 <pre><code>
-start_link(Name::atom(), Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; {ok, pid()}
+start_link(Name::<a href="#type-buffer_name">buffer_name()</a>, Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; {ok, pid()}
 </code></pre>
 <br />
 

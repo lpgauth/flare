@@ -12,21 +12,21 @@
 
 
 
-### <a name="type-compression_name">compression_name()</a> ###
+### <a name="type-buffer_name">buffer_name()</a> ###
 
 
 <pre><code>
-compression_name() = none | snappy
+buffer_name() = atom()
 </code></pre>
 
 
 
 
-### <a name="type-msg">msg()</a> ###
+### <a name="type-compression_name">compression_name()</a> ###
 
 
 <pre><code>
-msg() = binary()
+compression_name() = none | snappy
 </code></pre>
 
 
@@ -64,7 +64,7 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-0">init/0</a></td><td></td></tr><tr><td valign="top"><a href="#produce-2">produce/2</a></td><td></td></tr><tr><td valign="top"><a href="#start-1">start/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-2">start/2</a></td><td></td></tr><tr><td valign="top"><a href="#stop-1">stop/1</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-0">init/0</a></td><td></td></tr><tr><td valign="top"><a href="#server-1">server/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-1">start/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-2">start/2</a></td><td></td></tr><tr><td valign="top"><a href="#stop-1">stop/1</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -80,12 +80,12 @@ init() -&gt; ok
 </code></pre>
 <br />
 
-<a name="produce-2"></a>
+<a name="server-1"></a>
 
-### produce/2 ###
+### server/1 ###
 
 <pre><code>
-produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
+server(Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; {ok, <a href="#type-buffer_name">buffer_name()</a>} | {error, atom()}
 </code></pre>
 <br />
 

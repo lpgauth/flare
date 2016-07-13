@@ -94,7 +94,7 @@
 -type partition_metadata() :: #partition_metadata {}.
 -type request()            :: {req_id(), pid()}.
 -type requests()           :: [request()].
--type req_id()             :: {atom(), reference()}.
+-type req_id()             :: {erlang:timestamp(), pid()}.
 -type topic()              :: #topic {}.
 -type topic_name()         :: binary().
 -type topic_metadata()     :: #topic_metadata {}.

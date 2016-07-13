@@ -24,7 +24,7 @@ async_produce(Topic, Message) ->
 async_produce(Topic, Message, Pid) ->
     case flare_topic:server(Topic) of
         {ok, Server} ->
-            ReqId = {Server, make_ref()},
+            ReqId = {os:timestamp(), self()},
             Cast = {produce, ReqId, Message, Pid},
             Server ! Cast,
             {ok, ReqId};

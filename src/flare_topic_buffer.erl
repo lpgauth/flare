@@ -101,12 +101,11 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
 handle_msg(?MSG_TIMEOUT, #state {
         buffer = Buffer,
         buffer_delay_max = BufferDelayMax,
-        name = Name,
         requests = Requests
     } = State) ->
 
     {ok, ReqId} = produce(Buffer, State),
-    flare_queue:add(Name, ReqId, Requests),
+    flare_queue:add(ReqId, Requests),
 
     {ok, State#state {
         buffer = [],
@@ -120,7 +119,6 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
         buffer_count = BufferCount,
         buffer_size = BufferSize,
         buffer_size_max = SizeMax,
-        name = Name,
         requests = Requests
     } = State) ->
 
@@ -130,7 +128,7 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
     case BufferSize + iolist_size(Message) of
         X  when X > SizeMax ->
             {ok, ReqId2} = produce(Buffer2, State),
-            flare_queue:add(Name, ReqId2, Requests2),
+            flare_queue:add(ReqId2, Requests2),
 
             {ok, State#state {
                 buffer = [],
@@ -150,25 +148,27 @@ handle_msg(#cast {
         client = ?CLIENT,
         reply = {ok, {_, _, ErrorCode, _}},
         request_id = ReqId
-    }, #state {name = Name} = State) ->
+    }, State) ->
 
     case flare_response:error_code(ErrorCode) of
         ok ->
-            reply_all(Name, ReqId, ok);
+            reply(ReqId, ok);
+        {error, unknown} ->
+            reply(ReqId, {error, unknown});
         {error, Reason} ->
             % TODO: reload topic metadata on partition errors
             % TODO: retry certain errors
-            reply_all(Name, ReqId, {error, Reason})
+            reply(ReqId, {error, Reason})
     end,
     {ok, State};
 handle_msg(#cast {
         client = ?CLIENT,
         reply = Reply,
         request_id = ReqId
-    }, #state {name = Name} = State) ->
+    }, State) ->
 
     % TODO: retry certain errors
-    reply_all(Name, ReqId, Reply),
+    reply(ReqId, Reply),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -200,13 +200,16 @@ produce(Messages, #state {
         Acks, Compression),
     shackle:cast(PoolName, {produce, Request}).
 
-reply(Pid, ReqId, Reply) ->
-    Pid ! {ReqId, Reply}.
+reply_all([], _Reply) ->
+    ok;
+reply_all([{ReqId, Pid} | T], Reply) ->
+    Pid ! {ReqId, Reply},
+    reply_all(T, Reply).
 
-reply_all(Name, ExtReqId, Reply) ->
-    case flare_queue:remove(Name, ExtReqId) of
+reply(ExtReqId, Reply) ->
+    case flare_queue:remove(ExtReqId) of
         {ok, Requests} ->
-            [reply(Pid, ReqId, Reply) || {ReqId, Pid} <- Requests];
+            reply_all(Requests, Reply);
         {error, not_found} ->
             ok
     end.

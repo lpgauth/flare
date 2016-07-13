@@ -34,12 +34,30 @@ topic_name() = binary()
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#produce-2">produce/2</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#async_produce-2">async_produce/2</a></td><td></td></tr><tr><td valign="top"><a href="#async_produce-3">async_produce/3</a></td><td></td></tr><tr><td valign="top"><a href="#produce-2">produce/2</a></td><td></td></tr><tr><td valign="top"><a href="#produce-3">produce/3</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
 
 ## Function Details ##
+
+<a name="async_produce-2"></a>
+
+### async_produce/2 ###
+
+<pre><code>
+async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
+</code></pre>
+<br />
+
+<a name="async_produce-3"></a>
+
+### async_produce/3 ###
+
+<pre><code>
+async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>, Pid::pid()) -&gt; ok | {error, atom()}
+</code></pre>
+<br />
 
 <a name="produce-2"></a>
 
@@ -47,6 +65,15 @@ topic_name() = binary()
 
 <pre><code>
 produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
+</code></pre>
+<br />
+
+<a name="produce-3"></a>
+
+### produce/3 ###
+
+<pre><code>
+produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>, Timeout::pos_integer()) -&gt; ok | {error, atom()}
 </code></pre>
 <br />
 

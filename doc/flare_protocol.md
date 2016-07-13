@@ -122,7 +122,7 @@ encode_metadata(Topics::[iolist()]) -&gt; iolist()
 ### encode_produce/5 ###
 
 <pre><code>
-encode_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Partition::non_neg_integer(), Messages::<a href="#type-msg">msg()</a>, Acks::integer(), Compression::<a href="#type-compression">compression()</a>) -&gt; iolist()
+encode_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Partition::non_neg_integer(), Messages::<a href="#type-msg">msg()</a> | [<a href="#type-msg">msg()</a>], Acks::integer(), Compression::<a href="#type-compression">compression()</a>) -&gt; iolist()
 </code></pre>
 <br />
 
