@@ -15,20 +15,19 @@
 
 %% public
 -spec async_produce(topic_name(), msg()) ->
-    ok | {error, atom()}.
+    {ok, req_id()} | {error, atom()}.
 
 async_produce(Topic, Message) ->
     async_produce(Topic, Message, self()).
 
--spec async_produce(topic_name(), msg(), pid()) ->
-    ok | {error, atom()}.
+-spec async_produce(topic_name(), msg(), pid() | undefined) ->
+    {ok, req_id()} | {error, atom()}.
 
 async_produce(Topic, Message, Pid) ->
     case flare_topic:server(Topic) of
         {ok, Server} ->
             ReqId = {os:timestamp(), self()},
-            Cast = {produce, ReqId, Message, Pid},
-            Server ! Cast,
+            Server ! {produce, ReqId, Message, Pid},
             {ok, ReqId};
         {error, Reason} ->
             {error, Reason}

@@ -196,7 +196,7 @@ requests() = [<a href="#type-request">request()</a>]
 
 
 <pre><code>
-state() = #state{acks = 1..65535, buffer = list(), buffer_count = non_neg_integer(), buffer_delay_max = pos_integer(), buffer_size = non_neg_integer(), buffer_size_max = undefined | pos_integer(), compression = <a href="#type-compression">compression()</a>, partitions = undefined | list(), name = atom(), parent = pid(), requests = <a href="#type-requests">requests()</a>, timer_ref = undefined | reference(), topic = <a href="#type-topic_name">topic_name()</a>}
+state() = #state{acks = 1..65535, buffer = list(), buffer_count = non_neg_integer(), buffer_delay_max = pos_integer(), buffer_size = non_neg_integer(), buffer_size_max = undefined | pos_integer(), compression = <a href="#type-compression">compression()</a>, partitions = undefined | list(), name = atom(), parent = pid(), requests = <a href="#type-requests">requests()</a>, retries = non_neg_integer(), timer_ref = undefined | reference(), topic = <a href="#type-topic_name">topic_name()</a>}
 </code></pre>
 
 
@@ -226,7 +226,7 @@ topic_name() = binary()
 
 
 <pre><code>
-topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {pool_size, pos_integer()}
+topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {pool_size, pos_integer()} | {retries, non_neg_integer()}
 </code></pre>
 
 

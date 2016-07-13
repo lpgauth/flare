@@ -46,7 +46,7 @@ topic_name() = binary()
 
 
 <pre><code>
-topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {pool_size, pos_integer()}
+topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {pool_size, pos_integer()} | {retries, non_neg_integer()}
 </code></pre>
 
 

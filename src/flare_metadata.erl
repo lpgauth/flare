@@ -12,16 +12,9 @@
 partitions(Topic) ->
     case topic(Topic) of
         {ok, {_Brokers, [#topic_metadata {partion_metadata = []}]}} ->
-            {ok, []};
-        {ok, {Brokers, [#topic_metadata {
-                partion_metadata = PartitionMetadata
-            }]}} ->
-
-            {ok, [{PartitionId, name(Id), broker(Id, Brokers)} ||
-                #partition_metadata {
-                    partition_id = PartitionId,
-                    leader = Id
-                } <- PartitionMetadata]};
+            {error, no_metadata};
+        {ok, {Brokers, [#topic_metadata {partion_metadata = Metadata}]}} ->
+            {ok, [tuple(Partition, Brokers) || Partition <- Metadata]};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -56,3 +49,10 @@ topic([{Ip, Port} | T], Topic) ->
         {error, _Reason} ->
             topic(T, Topic)
     end.
+
+tuple(#partition_metadata {
+        partition_id = PartitionId,
+        leader = Id
+    }, Brokers) ->
+
+    {PartitionId, name(Id), broker(Id, Brokers)}.

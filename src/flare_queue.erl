@@ -4,16 +4,16 @@
 -compile(inline).
 -compile({inline_size, 512}).
 
-%% internal
 -export([
     add/3,
     init/0,
     remove/1
 ]).
 
-%% internal
+%% public
 -spec add(ext_req_id(), atom(), requests()) ->
     ok.
+
 add(ExtReqId, PoolName, Requests) ->
     ets:insert_new(?ETS_TABLE_QUEUE, {ExtReqId, {PoolName, Requests}}),
     ok.

@@ -92,7 +92,7 @@
 -type partition_tuple()    :: {partition_id(), atom(), broker()}.
 -type partition_tuples()   :: [partition_tuple()].
 -type partition_metadata() :: #partition_metadata {}.
--type request()            :: {req_id(), pid()}.
+-type request()            :: {req_id(), pid() | undefined}.
 -type requests()           :: [request()].
 -type req_id()             :: {erlang:timestamp(), pid()}.
 -type topic()              :: #topic {}.
@@ -102,5 +102,6 @@
                               {buffer_delay, pos_integer()} |
                               {buffer_size, non_neg_integer()} |
                               {compression, compression_name()} |
-                              {pool_size, pos_integer()}.
+                              {pool_size, pos_integer()} |
+                              {retries, non_neg_integer()}.
 -type topic_opts()         :: [topic_opt()].

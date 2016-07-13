@@ -24,6 +24,7 @@ init() ->
         public,
         {write_concurrency, true}
     ]),
+    flare_compiler:topic_utils(),
     ok.
 
 -spec server(topic_name()) ->
@@ -35,7 +36,12 @@ server(Topic) ->
             {error, topic_not_started};
         PoolSize ->
             N = shackle_utils:random(PoolSize),
-            {ok, flare_topic_utils:server_name(Topic, N)}
+            case flare_topic_utils:server_name(Topic, N) of
+                undefined ->
+                    {error, topic_not_started};
+                ServerName ->
+                    {ok, ServerName}
+            end
     end.
 
 -spec start(topic_name()) ->
@@ -54,13 +60,14 @@ start(Topic, Opts) ->
         false ->
             {error, topic_already_stated};
         true ->
-            flare_compiler:topic_utils(),
             case flare_metadata:partitions(Topic) of
                 {ok, Partitions} ->
                     flare_broker_pool:start(Partitions),
+                    flare_compiler:topic_utils(),
                     start_topic_buffers(Topic, Opts, Partitions, PoolSize),
                     ok;
                 {error, Reason} ->
+                    ets:delete(?ETS_TABLE_TOPIC, Topic),
                     {error, Reason}
             end
     end.

@@ -35,7 +35,7 @@ setup(_Socket, State) ->
 -spec handle_request(term(), state()) ->
     {ok, non_neg_integer(), iolist(), state()}.
 
-handle_request({produce, Request}, #state {
+handle_request({produce, Request, _}, #state {
         request_counter = RequestCounter
     } = State) ->
 
@@ -51,10 +51,11 @@ handle_request({produce, Request}, #state {
     {ok, [{pos_integer(), term()}], state()}.
 
 handle_data(Data, State) ->
-    {CorrelationId, [{topic, Topic, Partitions}]} =
-        flare_protocol:decode_produce(Data),
+    {CorrelationId, TopicArray} = flare_protocol:decode_produce(Data),
+    [{topic, Topic, Partitions}] = TopicArray,
     [{partition, Partition, ErrorCode, Offset}] = Partitions,
     Response = {ok, {Topic, Partition, ErrorCode, Offset}},
+
     {ok, [{CorrelationId, Response}], State}.
 
 -spec terminate(state()) -> ok.

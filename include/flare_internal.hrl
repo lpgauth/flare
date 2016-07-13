@@ -32,6 +32,7 @@
 -define(DEFAULT_TOPIC_BUFFER_SIZE, 10000).
 -define(DEFAULT_TOPIC_COMPRESSION, snappy).
 -define(DEFAULT_TOPIC_POOL_SIZE, 2).
+-define(DEFAULT_TOPIC_RETRIES, 3).
 
 %% ETS tables
 -define(ETS_TABLE_QUEUE, flare_queue).
