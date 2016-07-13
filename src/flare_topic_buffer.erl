@@ -99,13 +99,21 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
 
 %% private
 handle_msg(?MSG_TIMEOUT, #state {
+        buffer = [],
+        buffer_delay_max = BufferDelayMax
+    } = State) ->
+
+    {ok, State#state {
+        timer_ref = timer(BufferDelayMax)
+    }};
+handle_msg(?MSG_TIMEOUT, #state {
         buffer = Buffer,
         buffer_delay_max = BufferDelayMax,
         requests = Requests
     } = State) ->
 
-    {ok, ReqId} = produce(Buffer, State),
-    flare_queue:add(ReqId, Requests),
+    {ok, PoolName, ExtReqId} = produce(Buffer, State),
+    flare_queue:add(ExtReqId, PoolName, Requests),
 
     {ok, State#state {
         buffer = [],
@@ -126,9 +134,9 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
     Requests2 = [{ReqId, Pid} | Requests],
 
     case BufferSize + iolist_size(Message) of
-        X  when X > SizeMax ->
-            {ok, ReqId2} = produce(Buffer2, State),
-            flare_queue:add(ReqId2, Requests2),
+        Size when Size > SizeMax ->
+            {ok, PoolName, ExtReqId} = produce(Buffer2, State),
+            flare_queue:add(ExtReqId, PoolName, Requests2),
 
             {ok, State#state {
                 buffer = [],
@@ -136,39 +144,32 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
                 buffer_size = 0,
                 requests = []
             }};
-        X ->
+        Size ->
             {ok, State#state {
                 buffer = Buffer2,
                 buffer_count = BufferCount + 1,
-                buffer_size = X,
+                buffer_size = Size,
                 requests = Requests2
             }}
     end;
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {ok, {_, _, ErrorCode, _}},
+        request = Request,
         request_id = ReqId
     }, State) ->
 
-    case flare_response:error_code(ErrorCode) of
-        ok ->
-            reply(ReqId, ok);
-        {error, unknown} ->
-            reply(ReqId, {error, unknown});
-        {error, Reason} ->
-            % TODO: reload topic metadata on partition errors
-            % TODO: retry certain errors
-            reply(ReqId, {error, Reason})
-    end,
+    Response = flare_response:error_code(ErrorCode),
+    reply_or_retry(ReqId, Request, Response),
     {ok, State};
 handle_msg(#cast {
         client = ?CLIENT,
-        reply = Reply,
+        reply = {error, _Reason} = Error,
+        request = Request,
         request_id = ReqId
     }, State) ->
 
-    % TODO: retry certain errors
-    reply(ReqId, Reply),
+    reply_or_retry(ReqId, Request, Error),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -182,10 +183,6 @@ loop(#state {parent = Parent} = State) ->
             loop(State2)
     end.
 
-produce([], _State) ->
-    {ok, undefined};
-produce(_Messages, #state {partitions = undefined}) ->
-    {ok, undefined};
 produce(Messages, #state {
         acks = Acks,
         compression = Compression,
@@ -198,7 +195,18 @@ produce(Messages, #state {
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
         Acks, Compression),
-    shackle:cast(PoolName, {produce, Request}).
+    {ok, ReqId} = shackle:cast(PoolName, {produce, Request}),
+    {ok, PoolName, ReqId}.
+
+reply(ExtReqId, Reply) ->
+    case flare_queue:remove(ExtReqId) of
+        {ok, {_PoolName, Requests}} ->
+            reply_all(Requests, Reply);
+        {error, not_found} ->
+            shackle_utils:warning_msg(?CLIENT, "reply error: ~p~n",
+                [not_found]),
+            ok
+    end.
 
 reply_all([], _Reply) ->
     ok;
@@ -206,11 +214,29 @@ reply_all([{ReqId, Pid} | T], Reply) ->
     Pid ! {ReqId, Reply},
     reply_all(T, Reply).
 
-reply(ExtReqId, Reply) ->
+reply_or_retry(ExtReqId, _Request, ok) ->
+    reply(ExtReqId, ok);
+reply_or_retry(ExtReqId, _Request, {error, invalid_required_acks} = Error) ->
+    reply(ExtReqId, Error);
+reply_or_retry(ExtReqId, Request, {error, no_socket}) ->
+    retry(ExtReqId, Request);
+reply_or_retry(ExtReqId, Request, {error, socket_closed}) ->
+    retry(ExtReqId, Request);
+reply_or_retry(ExtReqId, _Request, {error, unknown} = Error) ->
+    reply(ExtReqId, Error);
+reply_or_retry(ExtReqId, _Request, {error, Reason} = Error) ->
+    shackle_utils:warning_msg(?CLIENT, "unhandled error_code: ~p~n",
+        [Reason]),
+    reply(ExtReqId, Error).
+
+retry(ExtReqId, Request) ->
     case flare_queue:remove(ExtReqId) of
-        {ok, Requests} ->
-            reply_all(Requests, Reply);
+        {ok, {PoolName, Requests}} ->
+            {ok, ExtReqId2} = shackle:cast(PoolName, Request),
+            flare_queue:add(ExtReqId2, {PoolName, Requests});
         {error, not_found} ->
+            shackle_utils:warning_msg(?CLIENT, "retry error: ~p~n",
+                [not_found]),
             ok
     end.
 

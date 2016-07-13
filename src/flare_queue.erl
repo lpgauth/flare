@@ -6,19 +6,16 @@
 
 %% internal
 -export([
-    add/2,
+    add/3,
     init/0,
     remove/1
 ]).
 
 %% internal
--spec add(ext_req_id() | undefined, requests()) ->
+-spec add(ext_req_id(), atom(), requests()) ->
     ok.
-
-add(undefined, _Requests) ->
-    ok;
-add(ExtReqId, Requests) ->
-    ets:insert(?ETS_TABLE_QUEUE, {ExtReqId, Requests}),
+add(ExtReqId, PoolName, Requests) ->
+    ets:insert_new(?ETS_TABLE_QUEUE, {ExtReqId, {PoolName, Requests}}),
     ok.
 
 -spec init() ->
