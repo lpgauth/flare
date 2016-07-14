@@ -82,6 +82,16 @@ compression_name() = none | snappy
 
 
 
+### <a name="type-msg">msg()</a> ###
+
+
+<pre><code>
+msg() = binary()
+</code></pre>
+
+
+
+
 ### <a name="type-partition_id">partition_id()</a> ###
 
 
@@ -176,7 +186,7 @@ req_id() = {<a href="erlang.md#type-timestamp">erlang:timestamp()</a>, pid()}
 
 
 <pre><code>
-request() = {<a href="#type-req_id">req_id()</a>, pid()}
+request() = {<a href="#type-req_id">req_id()</a>, pid() | undefined}
 </code></pre>
 
 
@@ -244,7 +254,7 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-5">init/5</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-5">init/5</a></td><td></td></tr><tr><td valign="top"><a href="#produce-4">produce/4</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -257,6 +267,15 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 
 <pre><code>
 init(Parent::pid(), Name::<a href="#type-buffer_name">buffer_name()</a>, Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; no_return()
+</code></pre>
+<br />
+
+<a name="produce-4"></a>
+
+### produce/4 ###
+
+<pre><code>
+produce(Messages::[<a href="#type-msg">msg()</a>], Requests::<a href="#type-requests">requests()</a>, Pid::pid(), State::<a href="#type-state">state()</a>) -&gt; ok
 </code></pre>
 <br />
 

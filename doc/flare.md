@@ -56,7 +56,7 @@ topic_name() = binary()
 ### async_produce/2 ###
 
 <pre><code>
-async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; ok | {error, atom()}
+async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>) -&gt; {ok, <a href="#type-req_id">req_id()</a>} | {error, atom()}
 </code></pre>
 <br />
 
@@ -65,7 +65,7 @@ async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a hr
 ### async_produce/3 ###
 
 <pre><code>
-async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>, Pid::pid()) -&gt; ok | {error, atom()}
+async_produce(Topic::<a href="#type-topic_name">topic_name()</a>, Message::<a href="#type-msg">msg()</a>, Pid::pid() | undefined) -&gt; {ok, <a href="#type-req_id">req_id()</a>} | {error, atom()}
 </code></pre>
 <br />
 

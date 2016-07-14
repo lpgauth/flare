@@ -36,7 +36,7 @@ req_id() = {<a href="erlang.md#type-timestamp">erlang:timestamp()</a>, pid()}
 
 
 <pre><code>
-request() = {<a href="#type-req_id">req_id()</a>, pid()}
+request() = {<a href="#type-req_id">req_id()</a>, pid() | undefined}
 </code></pre>
 
 

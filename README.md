@@ -2,8 +2,8 @@
 
 High Performance Erlang Kafka Producer (best-effort)
 
-[![Build Status](https://travis-ci.org/lpgauth/flare.svg?branch=dev)](https://travis-ci.org/lpgauth/flare)
-[![Coverage Status](https://coveralls.io/repos/github/lpgauth/flare/badge.svg?branch=dev)](https://coveralls.io/github/lpgauth/flare?branch=dev)
+[![Build Status](https://travis-ci.org/lpgauth/flare.svg?branch=master)](https://travis-ci.org/lpgauth/flare)
+[![Coverage Status](https://coveralls.io/repos/github/lpgauth/flare/badge.svg?branch=master)](https://coveralls.io/github/lpgauth/flare?branch=master)
 
 #### Features
 
@@ -20,7 +20,7 @@ Conditions that may trigger data loss:
 - Erlang VM crash
 
 ## API
-<a href="http://github.com/lpgauth/flare/blob/dev/doc/anchor.md#index" class="module">Function Index</a>
+<a href="http://github.com/lpgauth/flare/blob/master/doc/anchor.md#index" class="module">Function Index</a>
 
 #### Environment variables
 
