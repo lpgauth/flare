@@ -5,7 +5,8 @@
   {applications, [
     kernel,
     stdlib,
-    shackle
+    shackle,
+    statsderl
   ]},
   {mod, {flare_app, []}},
   {env, []}

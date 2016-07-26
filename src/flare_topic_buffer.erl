@@ -19,6 +19,9 @@
     system_terminate/4
 ]).
 
+-define(SAMPLE_RATE_ERROR, 0.1).
+-define(SAMPLE_RATE_OK, 0.005).
+
 -record(state, {
     acks                   :: 1..65535,
     buffer = []            :: list(),
@@ -34,7 +37,8 @@
     parent                 :: pid(),
     partitions             :: undefined | list(),
     requests = []          :: requests(),
-    topic                  :: topic_name()
+    topic                  :: topic_name(),
+    topic_key              :: binary()
 }).
 
 -type state() :: #state {}.
@@ -72,7 +76,8 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
         parent = Parent,
         partitions = Partitions,
-        topic = Topic
+        topic = Topic,
+        topic_key = topic_key(Topic)
     }).
 
 -spec produce([msg()], requests(), pid(), state()) ->
@@ -80,18 +85,31 @@ init(Parent, Name, Topic, Opts, Partitions) ->
 
 produce(Messages, Requests, Pid, #state {
         acks = Acks,
+        buffer_count = BufferCount,
         compression = Compression,
         partitions = Partitions,
-        topic = Topic
+        topic = Topic,
+        topic_key = TopicKey
     }) ->
+
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.call">>], 1, ?SAMPLE_RATE_OK),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".message.call">>], BufferCount + 1, ?SAMPLE_RATE_OK),
+    Timestamp = os:timestamp(),
 
     Messages2 = flare_protocol:encode_message_set(lists:reverse(Messages)),
     Messages3 = flare_utils:compress(Compression, Messages2),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
         Acks, Compression),
-    {ok, ReqId} = shackle:cast(PoolName, {produce, Request}, Pid),
-    flare_queue:add(ReqId, PoolName, Requests).
+    Cast = {produce, Request, BufferCount},
+    {ok, ReqId} = shackle:cast(PoolName, Cast, Pid),
+    flare_queue:add(ReqId, PoolName, Requests),
+
+    Diff = timer:now_diff(os:timestamp(), Timestamp),
+    statsderl:timing([<<"flare.produce.">>, TopicKey,
+        <<".call">>], Diff, ?SAMPLE_RATE_OK).
 
 -spec start_link(buffer_name(), topic_name(), topic_opts(),
         partition_tuples()) -> {ok, pid()}.
@@ -203,19 +221,27 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {ok, {_, _, ErrorCode, _}},
+        request = {_, _, Count},
         request_id = ReqId
-    }, State) ->
+    }, #state {
+        topic_key = TopicKey
+    } = State) ->
 
     Response = flare_response:error_code(ErrorCode),
     reply(ReqId, Response),
+    statsderl_produce(Response, TopicKey, Count),
     maybe_reload_metadata(Response, State);
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {error, _Reason} = Error,
+        request = {_, _, Count},
         request_id = ReqId
-    }, State) ->
+    }, #state {
+        topic_key = TopicKey
+    } = State) ->
 
     reply(ReqId, Error),
+    statsderl_produce(Error, TopicKey, Count),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -260,6 +286,20 @@ reply(ReqId, Response) ->
             ok
     end.
 
+statsderl_produce(ok, TopicKey, Count) ->
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.ok">>], 1, 0.01),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".message.ok">>], Count, 0.01);
+statsderl_produce({error, Reason}, TopicKey, Count) ->
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.error">>], 1, ?SAMPLE_RATE_ERROR),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".message.error">>], Count, ?SAMPLE_RATE_ERROR),
+    ReasonBin = atom_to_binary(Reason, latin1),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".error.">>, ReasonBin], 1, ?SAMPLE_RATE_ERROR).
+
 terminate(#state {
         requests = Requests,
         buffer_timer_ref = BufferTimerRef,
@@ -273,3 +313,6 @@ terminate(#state {
 
 timer(Time, Msg) ->
     erlang:send_after(Time, self(), Msg).
+
+topic_key(Topic) ->
+    binary:replace(Topic, <<".">>, <<"_">>, [global]).
