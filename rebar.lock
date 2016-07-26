@@ -13,14 +13,20 @@
   {git,"https://github.com/lpgauth/metal.git",
        {ref,"43e28220b5affa45aa1e5fb0583fee26547968d3"}},
   0},
+ {<<"parse_trans">>,{pkg,<<"parse_trans">>,<<"3.0.0">>},1},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
        {ref,"1cf730d86b918df5d390dcfce7f33f49de8e2084"}},
   0},
- {<<"snappyer">>,{pkg,<<"snappyer">>,<<"1.2.4">>},1}]}.
+ {<<"snappyer">>,{pkg,<<"snappyer">>,<<"1.2.4">>},1},
+ {<<"statsderl">>,
+  {git,"https://github.com/lpgauth/statsderl.git",
+       {ref,"d660959a2e1d95b25c24df6517a859bd23c14ac0"}},
+  0}]}.
 [
 {pkg_hash,[
  {<<"crc32cer">>, <<"8984906C4B4FAE6AA292C48F286A1C83B19AD44BD102287ACB94D696015967CE">>},
  {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>},
+ {<<"parse_trans">>, <<"9E96B1C9C3A0DF54E7B76F8F685D38BFA1EB21B31E042B1D1A5A70258E4DB1E3">>},
  {<<"snappyer">>, <<"6D739C534CD2339633127A2B40279BE71F149E5842C5363A4D88E66EFB7C1FEC">>}]}
 ].
