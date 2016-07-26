@@ -7,7 +7,8 @@
 -export([
     msg/4,
     send_recv/3,
-    timestamp/0
+    timestamp/0,
+    topic_key/1
 ]).
 
 %% public
@@ -57,6 +58,12 @@ send_recv(Ip, Port, Data) ->
 
 timestamp() ->
     os:system_time(millisecond).
+
+-spec topic_key(binary()) ->
+    binary().
+
+topic_key(Topic) ->
+    binary:replace(Topic, <<".">>, <<"_">>, [global]).
 
 % private
 ssize(undefined) ->
