@@ -9,4 +9,8 @@
  {<<"snappy">>,
   {git,"https://github.com/lpgauth/snappy-erlang-nif.git",
        {ref,"fba0b41114c6621fd3d4fc259bb05372e7408eb9"}},
+  0},
+ {<<"statsderl">>,
+  {git,"https://github.com/lpgauth/statsderl.git",
+       {ref,"45eb926a2da2f75be47d19b6c51ac08066d63e55"}},
   0}].
