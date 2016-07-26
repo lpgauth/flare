@@ -19,6 +19,9 @@
     system_terminate/4
 ]).
 
+-define(SAMPLE_RATE_ERROR, 0.1).
+-define(SAMPLE_RATE_OK, 0.005).
+
 -record(state, {
     acks                   :: 1..65535,
     buffer = []            :: list(),
@@ -34,7 +37,8 @@
     parent                 :: pid(),
     partitions             :: undefined | list(),
     requests = []          :: requests(),
-    topic                  :: topic_name()
+    topic                  :: topic_name(),
+    topic_key              :: binary()
 }).
 
 -type state() :: #state {}.
@@ -74,7 +78,8 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
         parent = Parent,
         partitions = Partitions,
-        topic = Topic
+        topic = Topic,
+        topic_key = topic_key(Topic)
     }).
 
 -spec produce(pid(), state()) ->
@@ -83,24 +88,37 @@ init(Parent, Name, Topic, Opts, Partitions) ->
 produce(Pid, #state {
         acks = Acks,
         buffer = Buffer,
+        buffer_count = BufferCount,
         compression = Compression,
         partitions = Partitions,
         requests = Requests,
-        topic = Topic
+        topic = Topic,
+        topic_key = TopicKey
     }) ->
+
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.call">>], 1, ?SAMPLE_RATE_OK),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".message.call">>], BufferCount, ?SAMPLE_RATE_OK),
+    Timestamp = os:timestamp(),
 
     Messages = flare_protocol:encode_message_set(lists:reverse(Buffer)),
     Messages2 = flare_utils:compress(Compression, Messages),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages2,
         Acks, Compression),
-    case shackle:cast(PoolName, {produce, Request}, Pid) of
+
+    case shackle:cast(PoolName, {produce, Request, BufferCount}, Pid) of
         {ok, ReqId} ->
             flare_queue:add(ReqId, PoolName, Requests);
-        {error, Reason} ->
+        {error, Reason} = Error ->
             shackle_utils:warning_msg(?CLIENT,
-                "shackle cast failed: ~p~n", [Reason])
-    end.
+                "shackle cast failed: ~p~n", [Reason]),
+            statsderl_produce(Error, TopicKey, BufferCount)
+    end,
+    Diff = timer:now_diff(os:timestamp(), Timestamp),
+    statsderl:timing([<<"flare.produce.">>, TopicKey,
+        <<".call">>], Diff, ?SAMPLE_RATE_OK).
 
 -spec start_link(buffer_name(), topic_name(), topic_opts(),
         partition_tuples()) -> {ok, pid()}.
@@ -221,18 +239,26 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
     }};
 handle_msg({#cast {
         client = ?CLIENT,
+        request = {_, _, Count},
         request_id = ReqId
-    }, {ok, {_, _, ErrorCode, _}}}, State) ->
+    }, {ok, {_, _, ErrorCode, _}}}, #state {
+        topic_key = TopicKey
+    } = State) ->
 
     Response = flare_response:error_code(ErrorCode),
     reply(ReqId, Response),
+    statsderl_produce(Response, TopicKey, Count),
     maybe_reload_metadata(Response, State);
 handle_msg({#cast {
         client = ?CLIENT,
+        request = {_, _, Count},
         request_id = ReqId
-    }, {error, _Reason} = Error}, State) ->
+    }, {error, _Reason} = Error}, #state {
+        topic_key = TopicKey
+    } = State) ->
 
     reply(ReqId, Error),
+    statsderl_produce(Error, TopicKey, Count),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -277,6 +303,20 @@ reply(ReqId, Response) ->
             ok
     end.
 
+statsderl_produce(ok, TopicKey, Count) ->
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.ok">>], 1, 0.01),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".message.ok">>], Count, 0.01);
+statsderl_produce({error, Reason}, TopicKey, Count) ->
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.error">>], 1, ?SAMPLE_RATE_ERROR),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".message.error">>], Count, ?SAMPLE_RATE_ERROR),
+    ReasonBin = atom_to_binary(Reason, latin1),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".error.">>, ReasonBin], 1, ?SAMPLE_RATE_ERROR).
+
 terminate(#state {
         requests = Requests,
         buffer_timer_ref = BufferTimerRef,
@@ -290,3 +330,6 @@ terminate(#state {
 
 timer(Time, Msg) ->
     erlang:send_after(Time, self(), Msg).
+
+topic_key(Topic) ->
+    binary:replace(Topic, <<".">>, <<"_">>, [global]).
