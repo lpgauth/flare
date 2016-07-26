@@ -17,6 +17,9 @@
     terminate/2
 ]).
 
+-define(SAMPLE_RATE_ERROR, 0.1).
+-define(SAMPLE_RATE_OK, 0.005).
+
 -record(state, {
     buffer             = [] :: list(),
     buffer_count       = 0  :: non_neg_integer(),
@@ -31,7 +34,8 @@
     partitions              :: undefined | list(),
     produce_opts            :: produce_opts(),
     requests           = [] :: [request()],
-    topic                   :: topic()
+    topic                   :: topic(),
+    topic_key               :: binary()
 }).
 
 -type state() :: #state {}.
@@ -48,8 +52,13 @@ produce(Pid, #state {
         partitions = Partitions,
         produce_opts = Opts,
         requests = Requests,
-        topic = Topic
+        topic = Topic,
+        topic_key = TopicKey
     }) ->
+
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.call">>], 1, ?SAMPLE_RATE_OK),
+    Timestamp = os:timestamp(),
 
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Batch = lists:reverse(Buffer),
@@ -58,10 +67,14 @@ produce(Pid, #state {
     case shackle:cast(PoolName, {produce, Req}, Pid) of
         {ok, ReqId} ->
             flare_queue:add(ReqId, PoolName, Requests);
-        {error, Reason} ->
+        {error, Reason} = Error ->
             shackle_utils:warning_msg(?CLIENT,
-                "shackle cast failed: ~p~n", [Reason])
-    end.
+                "shackle cast failed: ~p~n", [Reason]),
+            statsderl_produce(Error, TopicKey)
+    end,
+    Diff = timer:now_diff(os:timestamp(), Timestamp),
+    statsderl:timing([<<"flare.produce.">>, TopicKey,
+        <<".call">>], Diff, ?SAMPLE_RATE_OK).
 
 -spec start_link(buffer_name(), topic(), [topic_opt()],
     [partition_tuple()]) -> {ok, pid()}.
@@ -101,7 +114,8 @@ init(Name, Parent, Opts) ->
             compression => Compression,
             required_acks => Acks
         },
-        topic = Topic
+        topic = Topic,
+        topic_key = flare_utils:topic_key(Topic)
     }}.
 
 -spec handle_msg(term(), state()) ->
@@ -191,9 +205,12 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
 handle_msg({#cast {
         client = ?CLIENT,
         request_id = ReqId
-    }, {flare_response, Response}}, State) ->
+    }, {flare_response, Response}}, #state {
+        topic_key = TopicKey
+    } = State) ->
 
     reply_all(ReqId, Response),
+    statsderl_produce(Response, TopicKey),
     maybe_reload_metadata(Response, State).
 
 -spec terminate(term(), term()) ->
@@ -244,6 +261,16 @@ reply_all(ReqId, Response) ->
                 "reply error: ~p~n", [not_found]),
             ok
     end.
+
+statsderl_produce(ok, TopicKey) ->
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.ok">>], 1, 0.01);
+statsderl_produce({error, Reason}, TopicKey) ->
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".batch.error">>], 1, ?SAMPLE_RATE_ERROR),
+    ReasonBin = atom_to_binary(Reason, latin1),
+    statsderl:increment([<<"flare.produce.">>, TopicKey,
+        <<".error.">>, ReasonBin], 1, ?SAMPLE_RATE_ERROR).
 
 timer(Time, Msg) ->
     erlang:send_after(Time, self(), Msg).
