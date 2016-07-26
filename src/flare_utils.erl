@@ -7,7 +7,8 @@
 -export([
     compress/2,
     compression/1,
-    send_recv/3
+    send_recv/3,
+    topic_key/1
 ]).
 
 %% public
@@ -55,3 +56,9 @@ send_recv(Ip, Port, Data) ->
             error_logger:error_msg("failed to connect: ~p~n", [Reason]),
             {error, Reason}
     end.
+
+-spec topic_key(binary()) ->
+    binary().
+
+topic_key(Topic) ->
+    binary:replace(Topic, <<".">>, <<"_">>, [global]).

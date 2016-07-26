@@ -33,6 +33,9 @@ async_produce(Topic, Message, Pid) ->
                     Server ! {produce, ReqId, Message, Size, Pid},
                     {ok, ReqId};
                 false ->
+                    TopicKey = flare_utils:topic_key(Topic),
+                    statsderl:increment([<<"flare.produce.">>, TopicKey,
+                        <<".backlog_full">>], 1, 0.01),
                     {error, backlog_full}
             end;
         {error, Reason} ->

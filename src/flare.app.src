@@ -8,7 +8,8 @@
     metal,
     stdlib,
     shackle,
-    snappy
+    snappy,
+    statsderl
   ]},
   {mod, {flare_app, []}},
   {env, []}
