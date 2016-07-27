@@ -39,4 +39,5 @@
 -define(ETS_TABLE_TOPIC, flare_topic).
 
 %% msgs
+-define(MSG_RELOAD_METADATA, reload_metadata).
 -define(MSG_TIMEOUT, timeout).

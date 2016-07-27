@@ -35,7 +35,7 @@ setup(_Socket, State) ->
 -spec handle_request(term(), state()) ->
     {ok, non_neg_integer(), iolist(), state()}.
 
-handle_request({produce, Request, _}, #state {
+handle_request({produce, Request}, #state {
         request_counter = RequestCounter
     } = State) ->
 

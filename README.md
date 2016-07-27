@@ -100,12 +100,6 @@ High Performance Erlang Kafka Producer
     <td>2</td>
     <td>Number of topic buffer proccesses</td>
   </tr>
-  <tr>
-    <td>retries</td>
-    <td>non_neg_integer()</td>
-    <td>3</td>
-    <td>Number of retries for a failed batch</td>
-  </tr>
 </table>
 
 ## Examples
