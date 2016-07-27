@@ -31,7 +31,6 @@
     name             :: atom(),
     parent           :: pid(),
     requests = []    :: requests(),
-    retries          :: non_neg_integer(),
     timer_ref        :: undefined | reference(),
     topic            :: topic_name()
 }).
@@ -54,8 +53,6 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         ?DEFAULT_TOPIC_BUFFER_SIZE),
     Compression = flare_utils:compression(?LOOKUP(compression, Opts,
         ?DEFAULT_TOPIC_COMPRESSION)),
-    Retries = ?LOOKUP(retries, Opts,
-        ?DEFAULT_TOPIC_RETRIES),
 
     loop(#state {
         acks = Acks,
@@ -65,7 +62,6 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         name = Name,
         parent = Parent,
         partitions = Partitions,
-        retries = Retries,
         timer_ref = timer(BufferDelayMax),
         topic = Topic
     }).
@@ -77,7 +73,6 @@ produce(Messages, Requests, Pid, #state {
         acks = Acks,
         compression = Compression,
         partitions = Partitions,
-        retries = Retries,
         topic = Topic
     }) ->
 
@@ -86,7 +81,7 @@ produce(Messages, Requests, Pid, #state {
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
         Acks, Compression),
-    {ok, ReqId} = shackle:cast(PoolName, {produce, Request, Retries}, Pid),
+    {ok, ReqId} = shackle:cast(PoolName, {produce, Request}, Pid),
     flare_queue:add(ReqId, PoolName, Requests).
 
 -spec start_link(buffer_name(), topic_name(), topic_opts(),
@@ -122,6 +117,9 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
     exit(Reason).
 
 %% private
+async_produce(Buffer, Requests, State) ->
+    spawn(?MODULE, produce, [Buffer, Requests, self(), State]).
+
 handle_msg(?MSG_TIMEOUT, #state {
         buffer = [],
         buffer_delay_max = BufferDelayMax
@@ -136,7 +134,7 @@ handle_msg(?MSG_TIMEOUT, #state {
         requests = Requests
     } = State) ->
 
-    spawn(?MODULE, produce, [Buffer, Requests, self(), State]),
+    async_produce(Buffer, Requests, State),
 
     {ok, State#state {
         buffer = [],
@@ -145,6 +143,19 @@ handle_msg(?MSG_TIMEOUT, #state {
         requests = [],
         timer_ref = timer(BufferDelayMax)
     }};
+handle_msg(?MSG_RELOAD_METADATA, #state {topic = Topic} = State) ->
+    case flare_metadata:partitions(Topic) of
+        {ok, Partitions} ->
+            flare_broker_pool:start(Partitions),
+
+            {ok, State#state {
+                partitions = Partitions
+            }};
+        {error, Reason} ->
+            shackle_utils:warning_msg(?CLIENT,
+                "metadata reload failed: ~p~n", [Reason]),
+            {ok, State}
+    end;
 handle_msg({produce, ReqId, Message, Pid}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
@@ -158,7 +169,7 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
 
     case BufferSize + iolist_size(Message) of
         Size when Size > SizeMax ->
-            spawn(?MODULE, produce, [Buffer2, Requests2, self(), State]),
+            async_produce(Buffer2, Requests2, State),
 
             {ok, State#state {
                 buffer = [],
@@ -177,21 +188,19 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {ok, {_, _, ErrorCode, _}},
-        request = Request,
         request_id = ReqId
     }, State) ->
 
     Response = flare_response:error_code(ErrorCode),
-    reply_or_retry(ReqId, Request, Response),
+    reply(ReqId, Response),
     {ok, State};
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {error, _Reason} = Error,
-        request = Request,
         request_id = ReqId
     }, State) ->
 
-    reply_or_retry(ReqId, Request, Error),
+    reply(ReqId, Error),
     {ok, State}.
 
 loop(#state {parent = Parent} = State) ->
@@ -205,52 +214,31 @@ loop(#state {parent = Parent} = State) ->
             loop(State2)
     end.
 
-reply(ExtReqId, Reply) ->
-    case flare_queue:remove(ExtReqId) of
+reply(ReqId, ok) ->
+    reply_all(ReqId, ok);
+reply(ReqId, {error, not_leader_for_partition} = Error) ->
+    self() ! ?MSG_RELOAD_METADATA,
+    reply_all(ReqId, Error);
+reply(ReqId, {error, unknown_topic_or_partition} = Error) ->
+    self() ! ?MSG_RELOAD_METADATA,
+    reply_all(ReqId, Error);
+reply(ReqId, {error, _} = Error) ->
+    reply_all(ReqId, Error).
+
+reply_all([], _Response) ->
+    ok;
+reply_all([{_, undefined} | T], Response) ->
+    reply_all(T, Response);
+reply_all([{ReqId, Pid} | T], Response) ->
+    Pid ! {ReqId, Response},
+    reply_all(T, Response);
+reply_all(ReqId, Response) ->
+    case flare_queue:remove(ReqId) of
         {ok, {_PoolName, Requests}} ->
-            reply_all(Requests, Reply);
+            reply_all(Requests, Response);
         {error, not_found} ->
             shackle_utils:warning_msg(?CLIENT,
                 "reply error: ~p~n", [not_found]),
-            ok
-    end.
-
-reply_all([], _Reply) ->
-    ok;
-reply_all([{_, undefined} | T], Reply) ->
-    reply_all(T, Reply);
-reply_all([{ReqId, Pid} | T], Reply) ->
-    Pid ! {ReqId, Reply},
-    reply_all(T, Reply).
-
-reply_or_retry(ExtReqId, _, ok) ->
-    reply(ExtReqId, ok);
-reply_or_retry(ExtReqId, Request, {error, Reason} = Error) ->
-    case Reason of
-        invalid_required_acks ->
-            reply(ExtReqId, Error);
-        no_socket ->
-            retry(ExtReqId, Request, Error);
-        socket_closed ->
-            retry(ExtReqId, Request, Error);
-        unknown ->
-            reply(ExtReqId, Error);
-        _ ->
-            shackle_utils:warning_msg(?CLIENT,
-                "unhandled error_code: ~p~n", [Reason]),
-            reply(ExtReqId, Error)
-    end.
-
-retry(ExtReqId, {produce, _, 0}, Error) ->
-    reply(ExtReqId, Error);
-retry(ExtReqId, {produce, Request, N}, _) when is_integer(N) ->
-    case flare_queue:remove(ExtReqId) of
-        {ok, {PoolName, Requests}} ->
-            {ok, ExtReqId2} = shackle:cast(PoolName, {produce, Request, N - 1}),
-            flare_queue:add(ExtReqId2, PoolName, Requests);
-        {error, not_found} ->
-            shackle_utils:warning_msg(?CLIENT,
-                "retry error: ~p~n", [not_found]),
             ok
     end.
 

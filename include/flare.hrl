@@ -102,6 +102,5 @@
                               {buffer_delay, pos_integer()} |
                               {buffer_size, non_neg_integer()} |
                               {compression, compression_name()} |
-                              {pool_size, pos_integer()} |
-                              {retries, non_neg_integer()}.
+                              {pool_size, pos_integer()}.
 -type topic_opts()         :: [topic_opt()].
