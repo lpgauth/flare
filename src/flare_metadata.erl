@@ -14,7 +14,7 @@ partitions(Topic) ->
         {ok, {_Brokers, [#topic_metadata {partion_metadata = []}]}} ->
             {error, no_metadata};
         {ok, {Brokers, [#topic_metadata {partion_metadata = Metadata}]}} ->
-            {ok, [tuple(Partition, Brokers) || Partition <- Metadata]};
+            {ok, partition_tuples(Metadata, Brokers)};
         {error, Reason} ->
             {error, Reason}
     end.
@@ -30,6 +30,20 @@ broker(Id, Brokers) ->
 
 name(Id) ->
     list_to_atom("flare_broker_" ++ integer_to_list(Id)).
+
+partition_tuples([], _Brokers) ->
+    [];
+partition_tuples([#partition_metadata {
+        partition_id = PartitionId,
+        leader = Id
+    } | T], Brokers) ->
+
+    case broker(Id, Brokers) of
+        undefined ->
+            partition_tuples(T, Brokers);
+        Broker ->
+            [{PartitionId, name(Id), Broker} | partition_tuples(T, Brokers)]
+    end.
 
 topic(Topic) ->
     topic(?GET_ENV(broker_bootstrap_servers,
@@ -49,10 +63,3 @@ topic([{Ip, Port} | T], Topic) ->
         {error, _Reason} ->
             topic(T, Topic)
     end.
-
-tuple(#partition_metadata {
-        partition_id = PartitionId,
-        leader = Id
-    }, Brokers) ->
-
-    {PartitionId, name(Id), broker(Id, Brokers)}.
