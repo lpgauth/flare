@@ -20,22 +20,27 @@
 ]).
 
 -record(state, {
-    acks             :: 1..65535,
-    buffer = []      :: list(),
-    buffer_count = 0 :: non_neg_integer(),
-    buffer_delay_max :: pos_integer(),
-    buffer_size = 0  :: non_neg_integer(),
-    buffer_size_max  :: undefined | pos_integer(),
-    compression      :: compression(),
-    partitions       :: undefined | list(),
-    name             :: atom(),
-    parent           :: pid(),
-    requests = []    :: requests(),
-    timer_ref        :: undefined | reference(),
-    topic            :: topic_name()
+    acks                   :: 1..65535,
+    buffer = []            :: list(),
+    buffer_count       = 0 :: non_neg_integer(),
+    buffer_delay           :: pos_integer(),
+    buffer_size        = 0 :: non_neg_integer(),
+    buffer_size_max        :: undefined | pos_integer(),
+    buffer_timer_ref       :: undefined | reference(),
+    compression            :: compression(),
+    metadata_delay         :: pos_integer(),
+    metadata_timer_ref     :: undefined | reference(),
+    name                   :: atom(),
+    parent                 :: pid(),
+    partitions             :: undefined | list(),
+    requests = []          :: requests(),
+    topic                  :: topic_name()
 }).
 
 -type state() :: #state {}.
+
+-define(MSG_BUFFER_DELAY, buffer_timeout).
+-define(MSG_METADATA_DELAY, metadata_timeout).
 
 %% public
 -spec init(pid(), buffer_name(), topic_name(), topic_opts(),
@@ -47,22 +52,26 @@ init(Parent, Name, Topic, Opts, Partitions) ->
     proc_lib:init_ack(Parent, {ok, self()}),
 
     Acks = ?LOOKUP(acks, Opts, ?DEFAULT_TOPIC_ACKS),
-    BufferDelayMax = ?LOOKUP(buffer_delay, Opts,
+    BufferDelay = ?LOOKUP(buffer_delay, Opts,
         ?DEFAULT_TOPIC_BUFFER_DELAY),
     BufferSizeMax = ?LOOKUP(buffer_size, Opts,
         ?DEFAULT_TOPIC_BUFFER_SIZE),
     Compression = flare_utils:compression(?LOOKUP(compression, Opts,
         ?DEFAULT_TOPIC_COMPRESSION)),
+    MetadataDelay = ?LOOKUP(metadata_delay, Opts,
+        ?DEFAULT_TOPIC_METADATA_DELAY),
 
     loop(#state {
         acks = Acks,
-        buffer_delay_max = BufferDelayMax,
+        buffer_delay = BufferDelay,
         buffer_size_max = BufferSizeMax,
+        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
         compression = Compression,
         name = Name,
+        metadata_delay = MetadataDelay,
+        metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
         parent = Parent,
         partitions = Partitions,
-        timer_ref = timer(BufferDelayMax),
         topic = Topic
     }).
 
@@ -120,17 +129,17 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
 async_produce(Buffer, Requests, State) ->
     spawn(?MODULE, produce, [Buffer, Requests, self(), State]).
 
-handle_msg(?MSG_TIMEOUT, #state {
+handle_msg(?MSG_BUFFER_DELAY, #state {
         buffer = [],
-        buffer_delay_max = BufferDelayMax
+        buffer_delay = BufferDelay
     } = State) ->
 
     {ok, State#state {
-        timer_ref = timer(BufferDelayMax)
+        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY)
     }};
-handle_msg(?MSG_TIMEOUT, #state {
+handle_msg(?MSG_BUFFER_DELAY, #state {
         buffer = Buffer,
-        buffer_delay_max = BufferDelayMax,
+        buffer_delay = BufferDelay,
         requests = Requests
     } = State) ->
 
@@ -141,50 +150,56 @@ handle_msg(?MSG_TIMEOUT, #state {
         buffer_count = 0,
         buffer_size = 0,
         requests = [],
-        timer_ref = timer(BufferDelayMax)
+        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY)
     }};
-handle_msg(?MSG_RELOAD_METADATA, #state {topic = Topic} = State) ->
+handle_msg(?MSG_METADATA_DELAY, #state {
+        metadata_delay = MetadataDelay,
+        topic = Topic
+    } = State) ->
+
     case flare_metadata:partitions(Topic) of
         {ok, Partitions} ->
             flare_broker_pool:start(Partitions),
 
             {ok, State#state {
+                metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
                 partitions = Partitions
             }};
         {error, Reason} ->
             shackle_utils:warning_msg(?CLIENT,
                 "metadata reload failed: ~p~n", [Reason]),
-            {ok, State}
+            {ok, State#state {
+                metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY)
+            }}
     end;
+handle_msg({produce, ReqId, Message, Pid}, #state {
+        buffer = Buffer,
+        buffer_size = BufferSize,
+        buffer_size_max = SizeMax,
+        requests = Requests
+    } = State) when (BufferSize + size(Message)) > SizeMax ->
+
+    async_produce([Message | Buffer], [{ReqId, Pid} | Requests], State),
+
+    {ok, State#state {
+        buffer = [],
+        buffer_count = 0,
+        buffer_size = 0,
+        requests = []
+    }};
 handle_msg({produce, ReqId, Message, Pid}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
-        buffer_size_max = SizeMax,
         requests = Requests
     } = State) ->
 
-    Buffer2 = [Message | Buffer],
-    Requests2 = [{ReqId, Pid} | Requests],
-
-    case BufferSize + iolist_size(Message) of
-        Size when Size > SizeMax ->
-            async_produce(Buffer2, Requests2, State),
-
-            {ok, State#state {
-                buffer = [],
-                buffer_count = 0,
-                buffer_size = 0,
-                requests = []
-            }};
-        Size ->
-            {ok, State#state {
-                buffer = Buffer2,
-                buffer_count = BufferCount + 1,
-                buffer_size = Size,
-                requests = Requests2
-            }}
-    end;
+    {ok, State#state {
+        buffer = [Message | Buffer],
+        buffer_count = BufferCount + 1,
+        buffer_size = BufferSize + size(Message),
+        requests = [{ReqId, Pid} | Requests]
+    }};
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {ok, {_, _, ErrorCode, _}},
@@ -193,7 +208,7 @@ handle_msg(#cast {
 
     Response = flare_response:error_code(ErrorCode),
     reply(ReqId, Response),
-    {ok, State};
+    maybe_reload_metadata(Response, State);
 handle_msg(#cast {
         client = ?CLIENT,
         reply = {error, _Reason} = Error,
@@ -214,28 +229,31 @@ loop(#state {parent = Parent} = State) ->
             loop(State2)
     end.
 
-reply(ReqId, ok) ->
-    reply_all(ReqId, ok);
-reply(ReqId, {error, not_leader_for_partition} = Error) ->
-    self() ! ?MSG_RELOAD_METADATA,
-    reply_all(ReqId, Error);
-reply(ReqId, {error, unknown_topic_or_partition} = Error) ->
-    self() ! ?MSG_RELOAD_METADATA,
-    reply_all(ReqId, Error);
-reply(ReqId, {error, _} = Error) ->
-    reply_all(ReqId, Error).
+maybe_reload_metadata({error, not_leader_for_partition}, State) ->
+    reload_metatadata(State);
+maybe_reload_metadata({error, unknown_topic_or_partition}, State) ->
+    reload_metatadata(State);
+maybe_reload_metadata(_, State) ->
+    {ok, State}.
 
-reply_all([], _Response) ->
+reload_metatadata(#state {
+        metadata_timer_ref = MetadataTimerRef
+    } = State) ->
+
+    erlang:cancel_timer(MetadataTimerRef),
+    handle_msg(?MSG_METADATA_DELAY, State).
+
+reply([], _Response) ->
     ok;
-reply_all([{_, undefined} | T], Response) ->
-    reply_all(T, Response);
-reply_all([{ReqId, Pid} | T], Response) ->
+reply([{_, undefined} | T], Response) ->
+    reply(T, Response);
+reply([{ReqId, Pid} | T], Response) ->
     Pid ! {ReqId, Response},
-    reply_all(T, Response);
-reply_all(ReqId, Response) ->
+    reply(T, Response);
+reply(ReqId, Response) ->
     case flare_queue:remove(ReqId) of
         {ok, {_PoolName, Requests}} ->
-            reply_all(Requests, Response);
+            reply(Requests, Response);
         {error, not_found} ->
             shackle_utils:warning_msg(?CLIENT,
                 "reply error: ~p~n", [not_found]),
@@ -244,12 +262,14 @@ reply_all(ReqId, Response) ->
 
 terminate(#state {
         requests = Requests,
-        timer_ref = TimerRef
+        buffer_timer_ref = BufferTimerRef,
+        metadata_timer_ref = MetadataTimerRef
     }) ->
 
-    reply_all(Requests, {error, shutdown}),
-    erlang:cancel_timer(TimerRef),
+    reply(Requests, {error, shutdown}),
+    erlang:cancel_timer(BufferTimerRef),
+    erlang:cancel_timer(MetadataTimerRef),
     exit(shutdown).
 
-timer(Time) ->
-    erlang:send_after(Time, self(), ?MSG_TIMEOUT).
+timer(Time, Msg) ->
+    erlang:send_after(Time, self(), Msg).
