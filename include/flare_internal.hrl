@@ -31,13 +31,10 @@
 -define(DEFAULT_TOPIC_BUFFER_DELAY, 1000).
 -define(DEFAULT_TOPIC_BUFFER_SIZE, 10000).
 -define(DEFAULT_TOPIC_COMPRESSION, snappy).
+-define(DEFAULT_TOPIC_METADATA_DELAY, 60000).
 -define(DEFAULT_TOPIC_POOL_SIZE, 2).
 -define(DEFAULT_TOPIC_RETRIES, 3).
 
 %% ETS tables
 -define(ETS_TABLE_QUEUE, flare_queue).
 -define(ETS_TABLE_TOPIC, flare_topic).
-
-%% msgs
--define(MSG_RELOAD_METADATA, reload_metadata).
--define(MSG_TIMEOUT, timeout).

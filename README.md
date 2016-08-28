@@ -95,6 +95,12 @@ High Performance Erlang Kafka Producer
     <td>Compression configuration</td>
   </tr>
   <tr>
+    <td>metadata_delay</td>
+    <td>pos_integer()</td>
+    <td>60000</td>
+    <td>Maximun delay (milliseconds) before reloading metadata</td>
+  </tr>
+  <tr>
     <td>pool_size</td>
     <td>pos_integer()</td>
     <td>2</td>
