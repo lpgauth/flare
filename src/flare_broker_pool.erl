@@ -39,12 +39,7 @@ start(Name, #broker {
         {reconnect, Reconnect},
         {reconnect_time_max, ReconnectTimeMax},
         {reconnect_time_min, ReconnectTimeMin},
-        {socket_options, [
-            binary,
-            {packet, 4},
-            {send_timeout, 500},
-            {send_timeout_close, true}
-        ]}
+        {socket_options, ?SOCKET_OPTIONS}
     ], [
         {backlog_size, BacklogSize},
         {pool_size, PoolSize},
