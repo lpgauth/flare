@@ -12,7 +12,7 @@
 -define(SOCKET_OPTIONS, [
     binary,
     {packet, 4},
-    {send_timeout, 50},
+    {send_timeout, 5000},
     {send_timeout_close, true}
 ]).
 -define(SUPERVISOR, flare_sup).
