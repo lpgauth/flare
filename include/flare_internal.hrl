@@ -11,6 +11,8 @@
 -define(MATCH_SPEC(Name), [{{Name, '_'}, [], [true]}]).
 -define(SOCKET_OPTIONS, [
     binary,
+    {buffer, 65535},
+    {nodelay, true},
     {packet, 4},
     {send_timeout, 5000},
     {send_timeout_close, true}
