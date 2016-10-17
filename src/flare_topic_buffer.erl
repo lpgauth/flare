@@ -90,8 +90,13 @@ produce(Messages, Requests, Pid, #state {
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
         Acks, Compression),
-    {ok, ReqId} = shackle:cast(PoolName, {produce, Request}, Pid),
-    flare_queue:add(ReqId, PoolName, Requests).
+    case shackle:cast(PoolName, {produce, Request}, Pid) of
+        {ok, ReqId} ->
+            flare_queue:add(ReqId, PoolName, Requests);
+        {error, Reason} ->
+            shackle_utils:warning_msg(?CLIENT,
+                "shackle cast failed: ~p~n", [Reason])
+    end.
 
 -spec start_link(buffer_name(), topic_name(), topic_opts(),
         partition_tuples()) -> {ok, pid()}.
