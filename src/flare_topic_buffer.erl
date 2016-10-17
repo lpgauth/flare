@@ -7,7 +7,7 @@
 
 -export([
     init/5,
-    produce/4,
+    produce/2,
     start_link/4
 ]).
 
@@ -75,20 +75,22 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         topic = Topic
     }).
 
--spec produce([msg()], requests(), pid(), state()) ->
+-spec produce(pid(), state()) ->
     ok.
 
-produce(Messages, Requests, Pid, #state {
+produce(Pid, #state {
         acks = Acks,
+        buffer = Buffer,
         compression = Compression,
         partitions = Partitions,
+        requests = Requests,
         topic = Topic
     }) ->
 
-    Messages2 = flare_protocol:encode_message_set(lists:reverse(Messages)),
-    Messages3 = flare_utils:compress(Compression, Messages2),
+    Messages = flare_protocol:encode_message_set(lists:reverse(Buffer)),
+    Messages2 = flare_utils:compress(Compression, Messages),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
-    Request = flare_protocol:encode_produce(Topic, Partition, Messages3,
+    Request = flare_protocol:encode_produce(Topic, Partition, Messages2,
         Acks, Compression),
     case shackle:cast(PoolName, {produce, Request}, Pid) of
         {ok, ReqId} ->
@@ -131,8 +133,8 @@ system_terminate(Reason, _Parent, _Debug, _State) ->
     exit(Reason).
 
 %% private
-async_produce(Buffer, Requests, State) ->
-    spawn(?MODULE, produce, [Buffer, Requests, self(), State]).
+async_produce(State) ->
+    spawn(?MODULE, produce, [self(), State]).
 
 handle_msg(?MSG_BUFFER_DELAY, #state {
         buffer = [],
@@ -143,12 +145,10 @@ handle_msg(?MSG_BUFFER_DELAY, #state {
         buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY)
     }};
 handle_msg(?MSG_BUFFER_DELAY, #state {
-        buffer = Buffer,
-        buffer_delay = BufferDelay,
-        requests = Requests
+        buffer_delay = BufferDelay
     } = State) ->
 
-    async_produce(Buffer, Requests, State),
+    async_produce(State),
 
     {ok, State#state {
         buffer = [],
@@ -179,12 +179,18 @@ handle_msg(?MSG_METADATA_DELAY, #state {
     end;
 handle_msg({produce, ReqId, Message, Pid}, #state {
         buffer = Buffer,
+        buffer_count = BufferCount,
         buffer_size = BufferSize,
         buffer_size_max = SizeMax,
         requests = Requests
     } = State) when (BufferSize + size(Message)) > SizeMax ->
 
-    async_produce([Message | Buffer], [{ReqId, Pid} | Requests], State),
+    async_produce(State#state {
+        buffer = [Message | Buffer],
+        buffer_count = BufferCount + 1,
+        buffer_size = BufferSize + size(Message),
+        requests = [{ReqId, Pid} | Requests]
+    }),
 
     {ok, State#state {
         buffer = [],
