@@ -1,6 +1,10 @@
 {"1.1.0",
 [{<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
  {<<"metal">>,{pkg,<<"metal">>,<<"0.1.0">>},1},
+ {<<"parse_trans">>,
+  {git,"https://github.com/uwiger/parse_trans.git",
+       {ref,"6f3645afb43c7c57d61b54ef59aecab288ce1013"}},
+  1},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
        {ref,"bcf2f5bff0085f381efa4c44fb971261d6c6548b"}},
@@ -11,7 +15,7 @@
   0},
  {<<"statsderl">>,
   {git,"https://github.com/lpgauth/statsderl.git",
-       {ref,"45eb926a2da2f75be47d19b6c51ac08066d63e55"}},
+       {ref,"6c1f703682d4f2b264c13b66580af47288cfce88"}},
   0}]}.
 [
 {pkg_hash,[
