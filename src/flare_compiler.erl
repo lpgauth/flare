@@ -56,7 +56,7 @@ server_name_clauses(Topics) ->
 
 server_name_clauses([], Acc) ->
     Acc ++ [server_name_clause_anon()];
-server_name_clauses([{Topic, PoolSize} | T], Acc) ->
+server_name_clauses([{Topic, {_BufferSize, PoolSize}} | T], Acc) ->
     ServerClauses = [server_name_clause(Topic, Index) ||
         Index <- lists:seq(0, PoolSize)],
     server_name_clauses(T, Acc ++ ServerClauses).

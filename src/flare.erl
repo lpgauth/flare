@@ -25,10 +25,16 @@ async_produce(Topic, Message) ->
 
 async_produce(Topic, Message, Pid) ->
     case flare_topic:server(Topic) of
-        {ok, Server} ->
-            ReqId = {os:timestamp(), self()},
-            Server ! {produce, ReqId, Message, Pid},
-            {ok, ReqId};
+        {ok, {BufferSize, Server}} ->
+            Size = size(Message),
+            case shackle_backlog:check(Server, BufferSize * 4, Size) of
+                true ->
+                    ReqId = {os:timestamp(), self()},
+                    Server ! {produce, ReqId, Message, Size, Pid},
+                    {ok, ReqId};
+                false ->
+                    {error, backlog_full}
+            end;
         {error, Reason} ->
             {error, Reason}
     end.

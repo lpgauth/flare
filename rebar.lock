@@ -1,12 +1,16 @@
-[{<<"granderl">>,
-  {git,"https://github.com/tokenrove/granderl",
-       {ref,"6aa178dfb0097c3bfb5de196a45847323ab6729f"}},
-  1},
+{"1.1.0",
+[{<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
+ {<<"metal">>,{pkg,<<"metal">>,<<"0.1.0">>},1},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
-       {ref,"14c50629f285f25991ba4fb91177838701a7b815"}},
+       {ref,"bcf2f5bff0085f381efa4c44fb971261d6c6548b"}},
   0},
  {<<"snappy">>,
   {git,"https://github.com/lpgauth/snappy-erlang-nif.git",
        {ref,"fba0b41114c6621fd3d4fc259bb05372e7408eb9"}},
-  0}].
+  0}]}.
+[
+{pkg_hash,[
+ {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>},
+ {<<"metal">>, <<"168E0AB553E3B8144547E353085CEDAA43C8769E0B7E43C0146C99C2C33507AC">>}]}
+].

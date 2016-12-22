@@ -48,8 +48,10 @@
 
 init(Parent, Name, Topic, Opts, Partitions) ->
     process_flag(trap_exit, true),
-    register(Name, self()),
     proc_lib:init_ack(Parent, {ok, self()}),
+
+    register(Name, self()),
+    ok = shackle_backlog:new(Name),
 
     Acks = ?LOOKUP(acks, Opts, ?DEFAULT_TOPIC_ACKS),
     BufferDelay = ?LOOKUP(buffer_delay, Opts,
@@ -177,20 +179,23 @@ handle_msg(?MSG_METADATA_DELAY, #state {
                 metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY)
             }}
     end;
-handle_msg({produce, ReqId, Message, Pid}, #state {
+handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
         buffer_size_max = SizeMax,
+        name = Name,
         requests = Requests
-    } = State) when (BufferSize + size(Message)) > SizeMax ->
+    } = State) when (BufferSize + Size) > SizeMax ->
 
     async_produce(State#state {
         buffer = [Message | Buffer],
         buffer_count = BufferCount + 1,
-        buffer_size = BufferSize + size(Message),
+        buffer_size = BufferSize + Size,
         requests = [{ReqId, Pid} | Requests]
     }),
+
+    shackle_backlog:decrement(Name),
 
     {ok, State#state {
         buffer = [],
@@ -198,33 +203,34 @@ handle_msg({produce, ReqId, Message, Pid}, #state {
         buffer_size = 0,
         requests = []
     }};
-handle_msg({produce, ReqId, Message, Pid}, #state {
+handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
+        name = Name,
         requests = Requests
     } = State) ->
+
+    shackle_backlog:decrement(Name),
 
     {ok, State#state {
         buffer = [Message | Buffer],
         buffer_count = BufferCount + 1,
-        buffer_size = BufferSize + size(Message),
+        buffer_size = BufferSize + Size,
         requests = [{ReqId, Pid} | Requests]
     }};
-handle_msg(#cast {
+handle_msg({#cast {
         client = ?CLIENT,
-        reply = {ok, {_, _, ErrorCode, _}},
         request_id = ReqId
-    }, State) ->
+    }, {ok, {_, _, ErrorCode, _}}}, State) ->
 
     Response = flare_response:error_code(ErrorCode),
     reply(ReqId, Response),
     maybe_reload_metadata(Response, State);
-handle_msg(#cast {
+handle_msg({#cast {
         client = ?CLIENT,
-        reply = {error, _Reason} = Error,
         request_id = ReqId
-    }, State) ->
+    }, {error, _Reason} = Error}, State) ->
 
     reply(ReqId, Error),
     {ok, State}.
