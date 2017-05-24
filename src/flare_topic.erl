@@ -28,19 +28,19 @@ init() ->
     ok.
 
 -spec server(topic_name()) ->
-    {ok, buffer_name()} | {error, atom()}.
+    {ok, {buffer_size(), buffer_name()}} | {error, atom()}.
 
 server(Topic) ->
     case flare_utils:ets_lookup_element(?ETS_TABLE_TOPIC, Topic) of
         undefined ->
             {error, topic_not_started};
-        PoolSize ->
+        {BufferSize, PoolSize} ->
             N = shackle_utils:random(PoolSize),
             case flare_topic_utils:server_name(Topic, N) of
                 undefined ->
                     {error, topic_not_started};
                 ServerName ->
-                    {ok, ServerName}
+                    {ok, {BufferSize, ServerName}}
             end
     end.
 
@@ -54,9 +54,10 @@ start(Topic) ->
     ok | {error, atom()}.
 
 start(Topic, Opts) ->
-    PoolSize = ?LOOKUP(pool_size, Opts,
-        ?DEFAULT_TOPIC_POOL_SIZE),
-    case ets:insert_new(?ETS_TABLE_TOPIC, {Topic, PoolSize}) of
+    Buffer = ?LOOKUP(buffer_size, Opts, ?DEFAULT_TOPIC_BUFFER_SIZE),
+    PoolSize = ?LOOKUP(pool_size, Opts, ?DEFAULT_TOPIC_POOL_SIZE),
+
+    case ets:insert_new(?ETS_TABLE_TOPIC, {Topic, {Buffer, PoolSize}}) of
         false ->
             {error, topic_already_stated};
         true ->
@@ -79,7 +80,7 @@ stop(Topic) ->
     case flare_utils:ets_lookup_element(?ETS_TABLE_TOPIC, Topic) of
         undefined ->
             {error, topic_not_started};
-        PoolSize ->
+        {_BufferSize, PoolSize} ->
             case ets:select_delete(?ETS_TABLE_TOPIC, ?MATCH_SPEC(Topic)) of
                 0 ->
                     {error, topic_not_started};

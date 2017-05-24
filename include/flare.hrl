@@ -82,6 +82,7 @@
 %% types
 -type broker()             :: #broker {}.
 -type buffer_name()        :: atom().
+-type buffer_size()        :: non_neg_integer().
 -type compression_name()   :: none | snappy.
 -type compression()        :: ?COMPRESSION_NONE |
                               ?COMPRESSION_SNAPPY.
@@ -100,7 +101,7 @@
 -type topic_metadata()     :: #topic_metadata {}.
 -type topic_opt()          :: {acks, 0..65535} |
                               {buffer_delay, pos_integer()} |
-                              {buffer_size, non_neg_integer()} |
+                              {buffer_size, buffer_size()} |
                               {compression, compression_name()} |
                               {metadata_delay, pos_integer()} |
                               {pool_size, pos_integer()}.

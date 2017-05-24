@@ -7,9 +7,8 @@ flare_test_() ->
     {setup,
         fun () -> setup() end,
         fun (_) -> cleanup() end,
-    [
         fun produce_subtest/0
-    ]}.
+    }.
 
 %% tests
 produce_subtest() ->
