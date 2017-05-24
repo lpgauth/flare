@@ -22,6 +22,16 @@ buffer_name() = atom()
 
 
 
+### <a name="type-buffer_size">buffer_size()</a> ###
+
+
+<pre><code>
+buffer_size() = non_neg_integer()
+</code></pre>
+
+
+
+
 ### <a name="type-compression_name">compression_name()</a> ###
 
 
@@ -46,7 +56,7 @@ topic_name() = binary()
 
 
 <pre><code>
-topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {metadata_delay, pos_integer()} | {pool_size, pos_integer()}
+topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, <a href="#type-buffer_size">buffer_size()</a>} | {compression, <a href="#type-compression_name">compression_name()</a>} | {metadata_delay, pos_integer()} | {pool_size, pos_integer()}
 </code></pre>
 
 
@@ -85,7 +95,7 @@ init() -&gt; ok
 ### server/1 ###
 
 <pre><code>
-server(Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; {ok, <a href="#type-buffer_name">buffer_name()</a>} | {error, atom()}
+server(Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; {ok, {<a href="#type-buffer_size">buffer_size()</a>, <a href="#type-buffer_name">buffer_name()</a>}} | {error, atom()}
 </code></pre>
 <br />
 

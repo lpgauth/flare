@@ -7,6 +7,7 @@ High Performance Erlang Kafka Producer
 
 #### Features
 
+* Backpressure via backlog (OOM protection)
 * Compression support (snappy)
 * Performance optimized
 * Topic buffering (delay, size)

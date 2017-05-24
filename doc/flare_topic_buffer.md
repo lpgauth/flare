@@ -42,11 +42,21 @@ buffer_name() = atom()
 
 
 
+### <a name="type-buffer_size">buffer_size()</a> ###
+
+
+<pre><code>
+buffer_size() = non_neg_integer()
+</code></pre>
+
+
+
+
 ### <a name="type-client_option">client_option()</a> ###
 
 
 <pre><code>
-client_option() = {ip, <a href="inet.md#type-ip_address">inet:ip_address()</a> | <a href="inet.md#type-hostname">inet:hostname()</a>} | {port, <a href="inet.md#type-port_number">inet:port_number()</a>} | {protocol, <a href="#type-protocol">protocol()</a>} | {reconnect, boolean()} | {reconnect_time_max, <a href="#type-time">time()</a>} | {reconnect_time_min, <a href="#type-time">time()</a>} | {socket_options, [<a href="gen_tcp.md#type-connect_option">gen_tcp:connect_option()</a> | <a href="gen_udp.md#type-option">gen_udp:option()</a>]}
+client_option() = {ip, <a href="inet.md#type-ip_address">inet:ip_address()</a> | <a href="inet.md#type-hostname">inet:hostname()</a>} | {port, <a href="inet.md#type-port_number">inet:port_number()</a>} | {protocol, <a href="#type-protocol">protocol()</a>} | {reconnect, boolean()} | {reconnect_time_max, <a href="#type-time">time()</a> | infinity} | {reconnect_time_min, <a href="#type-time">time()</a>} | {socket_options, [<a href="gen_tcp.md#type-connect_option">gen_tcp:connect_option()</a> | <a href="gen_udp.md#type-option">gen_udp:option()</a>]}
 </code></pre>
 
 
@@ -77,16 +87,6 @@ compression() = 0 | 2
 
 <pre><code>
 compression_name() = none | snappy
-</code></pre>
-
-
-
-
-### <a name="type-msg">msg()</a> ###
-
-
-<pre><code>
-msg() = binary()
 </code></pre>
 
 
@@ -166,7 +166,7 @@ pool_strategy() = random | round_robin
 
 
 <pre><code>
-protocol() = shackle_tcp | shackle_udp
+protocol() = shackle_ssl | shackle_tcp | shackle_udp
 </code></pre>
 
 
@@ -236,7 +236,7 @@ topic_name() = binary()
 
 
 <pre><code>
-topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, non_neg_integer()} | {compression, <a href="#type-compression_name">compression_name()</a>} | {metadata_delay, pos_integer()} | {pool_size, pos_integer()}
+topic_opt() = {acks, 0..65535} | {buffer_delay, pos_integer()} | {buffer_size, <a href="#type-buffer_size">buffer_size()</a>} | {compression, <a href="#type-compression_name">compression_name()</a>} | {metadata_delay, pos_integer()} | {pool_size, pos_integer()}
 </code></pre>
 
 
@@ -254,7 +254,7 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-5">init/5</a></td><td></td></tr><tr><td valign="top"><a href="#produce-4">produce/4</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-5">init/5</a></td><td></td></tr><tr><td valign="top"><a href="#produce-2">produce/2</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -270,12 +270,12 @@ init(Parent::pid(), Name::<a href="#type-buffer_name">buffer_name()</a>, Topic::
 </code></pre>
 <br />
 
-<a name="produce-4"></a>
+<a name="produce-2"></a>
 
-### produce/4 ###
+### produce/2 ###
 
 <pre><code>
-produce(Messages::[<a href="#type-msg">msg()</a>], Requests::<a href="#type-requests">requests()</a>, Pid::pid(), State::<a href="#type-state">state()</a>) -&gt; ok
+produce(Pid::pid(), State::<a href="#type-state">state()</a>) -&gt; ok
 </code></pre>
 <br />
 
