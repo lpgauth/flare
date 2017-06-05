@@ -195,7 +195,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         requests = [{ReqId, Pid} | Requests]
     }),
 
-    shackle_backlog:decrement(Name),
+    shackle_backlog:decrement(Name, Size),
 
     {ok, State#state {
         buffer = [],
@@ -211,7 +211,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         requests = Requests
     } = State) ->
 
-    shackle_backlog:decrement(Name),
+    shackle_backlog:decrement(Name, Size),
 
     {ok, State#state {
         buffer = [Message | Buffer],
