@@ -79,7 +79,7 @@ init(Parent, Name, Topic, Opts, Partitions) ->
         parent = Parent,
         partitions = Partitions,
         topic = Topic,
-        topic_key = topic_key(Topic)
+        topic_key = flare_utils:topic_key(Topic)
     }).
 
 -spec produce(pid(), state()) ->
@@ -330,6 +330,3 @@ terminate(#state {
 
 timer(Time, Msg) ->
     erlang:send_after(Time, self(), Msg).
-
-topic_key(Topic) ->
-    binary:replace(Topic, <<".">>, <<"_">>, [global]).
