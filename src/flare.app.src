@@ -1,6 +1,6 @@
 {application, flare, [
   {description, "kafka producer"},
-  {vsn, "0.1.10"},
+  {vsn, "0.1.11"},
   {registered, []},
   {applications, [
     kernel,
