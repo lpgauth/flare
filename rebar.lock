@@ -1,9 +1,13 @@
 {"1.1.0",
 [{<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
- {<<"metal">>,{pkg,<<"metal">>,<<"0.1.0">>},1},
+ {<<"metal">>,{pkg,<<"metal">>,<<"0.1.1">>},1},
+ {<<"parse_trans">>,
+  {git,"https://github.com/uwiger/parse_trans.git",
+       {ref,"6f3645afb43c7c57d61b54ef59aecab288ce1013"}},
+  1},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
-       {ref,"bcf2f5bff0085f381efa4c44fb971261d6c6548b"}},
+       {ref,"65b34fb66538a791b8de4ddef99e71768805aaac"}},
   0},
  {<<"snappy">>,
   {git,"https://github.com/lpgauth/snappy-erlang-nif.git",
@@ -12,5 +16,5 @@
 [
 {pkg_hash,[
  {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>},
- {<<"metal">>, <<"168E0AB553E3B8144547E353085CEDAA43C8769E0B7E43C0146C99C2C33507AC">>}]}
+ {<<"metal">>, <<"5D3D1322DA7BCD34B94FED5486F577973685298883954F7A3E517EF5EF6953F5">>}]}
 ].
