@@ -6,17 +6,15 @@
 -compile({inline_size, 512}).
 
 -export([
-    init/5,
     produce/2,
     start_link/4
 ]).
 
-%% sys behavior
+-behavior(metal).
 -export([
-    system_code_change/4,
-    system_continue/3,
-    system_get_state/1,
-    system_terminate/4
+    init/3,
+    handle_msg/2,
+    terminate/2
 ]).
 
 -record(state, {
@@ -43,40 +41,6 @@
 -define(MSG_METADATA_DELAY, metadata_timeout).
 
 %% public
--spec init(pid(), buffer_name(), topic_name(), topic_opts(),
-        partition_tuples()) -> no_return().
-
-init(Parent, Name, Topic, Opts, Partitions) ->
-    process_flag(trap_exit, true),
-    proc_lib:init_ack(Parent, {ok, self()}),
-
-    register(Name, self()),
-    ok = shackle_backlog:new(Name),
-
-    Acks = ?LOOKUP(acks, Opts, ?DEFAULT_TOPIC_ACKS),
-    BufferDelay = ?LOOKUP(buffer_delay, Opts,
-        ?DEFAULT_TOPIC_BUFFER_DELAY),
-    BufferSizeMax = ?LOOKUP(buffer_size, Opts,
-        ?DEFAULT_TOPIC_BUFFER_SIZE),
-    Compression = flare_utils:compression(?LOOKUP(compression, Opts,
-        ?DEFAULT_TOPIC_COMPRESSION)),
-    MetadataDelay = ?LOOKUP(metadata_delay, Opts,
-        ?DEFAULT_TOPIC_METADATA_DELAY),
-
-    loop(#state {
-        acks = Acks,
-        buffer_delay = BufferDelay,
-        buffer_size_max = BufferSizeMax,
-        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
-        compression = Compression,
-        name = Name,
-        metadata_delay = MetadataDelay,
-        metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
-        parent = Parent,
-        partitions = Partitions,
-        topic = Topic
-    }).
-
 -spec produce(pid(), state()) ->
     ok.
 
@@ -94,6 +58,7 @@ produce(Pid, #state {
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages2,
         Acks, Compression),
+
     case shackle:cast(PoolName, {produce, Request}, Pid) of
         {ok, ReqId} ->
             flare_queue:add(ReqId, PoolName, Requests);
@@ -103,40 +68,46 @@ produce(Pid, #state {
     end.
 
 -spec start_link(buffer_name(), topic_name(), topic_opts(),
-        partition_tuples()) -> {ok, pid()}.
+    partition_tuples()) -> {ok, pid()}.
 
 start_link(Name, Topic, Opts, Partitions) ->
-    InitOpts = [self(), Name, Topic, Opts, Partitions],
-    proc_lib:start_link(?MODULE, init, InitOpts).
+    Args = {Topic, Opts, Partitions},
+    metal:start_link(?MODULE, Name, Args).
 
-%% sys callbacks
--spec system_code_change(state(), module(), undefined | term(), term()) ->
-    {ok, state()}.
+%% metal_server callbacks
+-spec init(server_name(), pid(), term()) ->
+    no_return().
 
-system_code_change(State, _Module, _OldVsn, _Extra) ->
-    {ok, State}.
+init(Name, Parent, Opts) ->
+    {Topic, TopicOpts, Partitions} = Opts,
+    ok = shackle_backlog:new(Name),
 
--spec system_continue(pid(), [], state()) ->
-    ok.
+    Acks = ?LOOKUP(acks, TopicOpts, ?DEFAULT_TOPIC_ACKS),
+    BufferDelay = ?LOOKUP(buffer_delay, TopicOpts,
+        ?DEFAULT_TOPIC_BUFFER_DELAY),
+    BufferSizeMax = ?LOOKUP(buffer_size, TopicOpts,
+        ?DEFAULT_TOPIC_BUFFER_SIZE),
+    Compression = flare_utils:compression(?LOOKUP(compression, TopicOpts,
+        ?DEFAULT_TOPIC_COMPRESSION)),
+    MetadataDelay = ?LOOKUP(metadata_delay, TopicOpts,
+        ?DEFAULT_TOPIC_METADATA_DELAY),
 
-system_continue(_Parent, _Debug, State) ->
-    loop(State).
+    {ok, #state {
+        acks = Acks,
+        buffer_delay = BufferDelay,
+        buffer_size_max = BufferSizeMax,
+        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
+        compression = Compression,
+        name = Name,
+        metadata_delay = MetadataDelay,
+        metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
+        parent = Parent,
+        partitions = Partitions,
+        topic = Topic
+    }}.
 
--spec system_get_state(state()) ->
-    {ok, state()}.
-
-system_get_state(State) ->
-    {ok, State}.
-
--spec system_terminate(term(), pid(), [], state()) ->
-    none().
-
-system_terminate(Reason, _Parent, _Debug, _State) ->
-    exit(Reason).
-
-%% private
-async_produce(State) ->
-    spawn(?MODULE, produce, [self(), State]).
+-spec handle_msg(term(), state()) ->
+    {ok, term()}.
 
 handle_msg(?MSG_BUFFER_DELAY, #state {
         buffer = [],
@@ -235,16 +206,23 @@ handle_msg({#cast {
     reply(ReqId, Error),
     {ok, State}.
 
-loop(#state {parent = Parent} = State) ->
-    receive
-        {'EXIT', _Pid, shutdown} ->
-            terminate(State);
-        {system, From, Request} ->
-            sys:handle_system_msg(Request, From, Parent, ?MODULE, [], State);
-        Message ->
-            {ok, State2} = handle_msg(Message, State),
-            loop(State2)
-    end.
+-spec terminate(term(), term()) ->
+    ok.
+
+terminate(_Reason, #state {
+        requests = Requests,
+        buffer_timer_ref = BufferTimerRef,
+        metadata_timer_ref = MetadataTimerRef
+    }) ->
+
+    reply(Requests, {error, shutdown}),
+    erlang:cancel_timer(BufferTimerRef),
+    erlang:cancel_timer(MetadataTimerRef),
+    ok.
+
+%% private
+async_produce(State) ->
+    spawn(?MODULE, produce, [self(), State]).
 
 maybe_reload_metadata({error, not_leader_for_partition}, State) ->
     reload_metatadata(State);
@@ -276,17 +254,6 @@ reply(ReqId, Response) ->
                 "reply error: ~p~n", [not_found]),
             ok
     end.
-
-terminate(#state {
-        requests = Requests,
-        buffer_timer_ref = BufferTimerRef,
-        metadata_timer_ref = MetadataTimerRef
-    }) ->
-
-    reply(Requests, {error, shutdown}),
-    erlang:cancel_timer(BufferTimerRef),
-    erlang:cancel_timer(MetadataTimerRef),
-    exit(shutdown).
 
 timer(Time, Msg) ->
     erlang:send_after(Time, self(), Msg).

@@ -4,6 +4,7 @@
   {registered, []},
   {applications, [
     kernel,
+    metal,
     stdlib,
     shackle,
     snappy
