@@ -1,12 +1,13 @@
 {"1.1.0",
-[{<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
+[{<<"foil">>,{pkg,<<"foil">>,<<"0.1.1">>},1},
+ {<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
  {<<"metal">>,
   {git,"https://github.com/lpgauth/metal.git",
        {ref,"43e28220b5affa45aa1e5fb0583fee26547968d3"}},
   0},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
-       {ref,"65b34fb66538a791b8de4ddef99e71768805aaac"}},
+       {ref,"9106af7a01883f0160d3235662fa6c712f4ce326"}},
   0},
  {<<"snappy">>,
   {git,"https://github.com/lpgauth/snappy-erlang-nif.git",
@@ -14,5 +15,6 @@
   0}]}.
 [
 {pkg_hash,[
+ {<<"foil">>, <<"4D07B62C114636BBC3EEBD5CEE04B23A7AAB1262B0F68AA79005A6FBC3790472">>},
  {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>}]}
 ].
