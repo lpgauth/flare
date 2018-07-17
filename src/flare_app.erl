@@ -37,4 +37,5 @@ start(_StartType, _StartArgs) ->
 
 stop(_State) ->
     shackle_pool:stop(?APP),
+    shackle_pool:terminate(),
     ok.

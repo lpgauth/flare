@@ -4,14 +4,13 @@
 -compile(inline).
 -compile({inline_size, 512}).
 
--ignore_xref([{flare_topic_utils, server_name, 2}]).
-
 -export([
     init/0,
     server/1,
     start/1,
     start/2,
-    stop/1
+    stop/1,
+    terminate/0
 ]).
 
 %% public
@@ -19,29 +18,28 @@
     ok.
 
 init() ->
-    ets:new(?ETS_TABLE_TOPIC, [
-        named_table,
-        public,
-        {write_concurrency, true}
-    ]),
-    flare_compiler:topic_utils(),
-    ok.
+    foil:new(?MODULE),
+    foil:load(?MODULE).
 
 -spec server(topic_name()) ->
     {ok, {buffer_size(), buffer_name()}} | {error, atom()}.
 
 server(Topic) ->
-    case flare_utils:ets_lookup_element(?ETS_TABLE_TOPIC, Topic) of
-        undefined ->
-            {error, topic_not_started};
-        {BufferSize, PoolSize} ->
+    case foil:lookup(?MODULE, Topic) of
+        {ok, {BufferSize, PoolSize}} ->
             N = shackle_utils:random(PoolSize),
-            case flare_topic_utils:server_name(Topic, N) of
-                undefined ->
+            case foil:lookup(?MODULE, {Topic, N}) of
+                {ok, ServerName} ->
+                    {ok, {BufferSize, ServerName}};
+                {error, key_not_found} ->
                     {error, topic_not_started};
-                ServerName ->
-                    {ok, {BufferSize, ServerName}}
-            end
+                {error, _} ->
+                    {error, flare_not_started}
+            end;
+        {error, key_not_found} ->
+            {error, topic_not_started};
+        {error, _} ->
+            {error, flare_not_started}
     end.
 
 -spec start(topic_name()) ->
@@ -54,47 +52,64 @@ start(Topic) ->
     ok | {error, atom()}.
 
 start(Topic, Opts) ->
-    Buffer = ?LOOKUP(buffer_size, Opts, ?DEFAULT_TOPIC_BUFFER_SIZE),
+    BufferSize = ?LOOKUP(buffer_size, Opts, ?DEFAULT_TOPIC_BUFFER_SIZE),
     PoolSize = ?LOOKUP(pool_size, Opts, ?DEFAULT_TOPIC_POOL_SIZE),
 
-    case ets:insert_new(?ETS_TABLE_TOPIC, {Topic, {Buffer, PoolSize}}) of
-        false ->
+    case foil:lookup(?MODULE, Topic) of
+        {ok, _} ->
             {error, topic_already_stated};
-        true ->
+        {error, key_not_found} ->
+            foil:insert(?MODULE, Topic, {BufferSize, PoolSize}),
+            foil:load(?MODULE),
             case flare_metadata:partitions(Topic) of
                 {ok, Partitions} ->
                     flare_broker_pool:start(Partitions),
-                    flare_compiler:topic_utils(),
                     start_topic_buffers(Topic, Opts, Partitions, PoolSize),
+                    [foil:insert(?MODULE, {Topic, I}, name(Topic, I)) ||
+                        I <- lists:seq(1, PoolSize)],
+                    foil:load(?MODULE),
                     ok;
                 {error, Reason} ->
-                    ets:delete(?ETS_TABLE_TOPIC, Topic),
+                    foil:delete(?MODULE, Topic),
+                    foil:load(?MODULE),
                     {error, Reason}
-            end
+            end;
+        {error, _} ->
+            {error, flare_not_started}
     end.
 
 -spec stop(topic_name()) ->
     ok | {error, atom()}.
 
 stop(Topic) ->
-    case flare_utils:ets_lookup_element(?ETS_TABLE_TOPIC, Topic) of
-        undefined ->
+    case foil:lookup(?MODULE, Topic) of
+        {ok, {_BufferSize, PoolSize}} ->
+            stop_topic_buffers(Topic, PoolSize),
+            [foil:delete(?MODULE, name(Topic, I)) ||
+                I <- lists:seq(1, PoolSize)],
+            foil:delete(?MODULE, Topic),
+            foil:load(?MODULE);
+        {error, key_not_found} ->
             {error, topic_not_started};
-        {_BufferSize, PoolSize} ->
-            case ets:select_delete(?ETS_TABLE_TOPIC, ?MATCH_SPEC(Topic)) of
-                0 ->
-                    {error, topic_not_started};
-                1 ->
-                    stop_topic_buffers(Topic, PoolSize),
-                    flare_compiler:topic_utils()
-            end
+        {error, _} ->
+            {error, flare_not_started}
     end.
 
+-spec terminate() ->
+    ok.
+
+terminate() ->
+    foil:delete(?MODULE).
+
 %% private
+name(Topic, Index) ->
+    list_to_atom("flare_topic_" ++ binary_to_list(Topic) ++
+        "_" ++ integer_to_list(Index)).
+
 start_topic_buffers(_Topic, _Opts, _Partitions, 0) ->
     ok;
 start_topic_buffers(Topic, Opts, Partitions, N) ->
-    Name = flare_topic_utils:server_name(Topic, N),
+    Name = name(Topic, N),
     Spec = ?CHILD(Name, flare_topic_buffer, [Name, Topic, Opts, Partitions]),
     {ok, _Pid} = supervisor:start_child(?SUPERVISOR, Spec),
     start_topic_buffers(Topic, Opts, Partitions, N - 1).
@@ -102,7 +117,7 @@ start_topic_buffers(Topic, Opts, Partitions, N) ->
 stop_topic_buffers(_Topic, 0) ->
     ok;
 stop_topic_buffers(Topic, N) ->
-    Name = flare_topic_utils:server_name(Topic, N),
+    Name = name(Topic, N),
     ok = supervisor:terminate_child(?SUPERVISOR, Name),
     ok = supervisor:delete_child(?SUPERVISOR, Name),
     stop_topic_buffers(Topic, N - 1).

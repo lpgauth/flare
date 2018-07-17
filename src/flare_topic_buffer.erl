@@ -196,14 +196,14 @@ handle_msg({#cast {
     }, {ok, {_, _, ErrorCode, _}}}, State) ->
 
     Response = flare_response:error_code(ErrorCode),
-    reply(ReqId, Response),
+    reply_all(ReqId, Response),
     maybe_reload_metadata(Response, State);
 handle_msg({#cast {
         client = ?CLIENT,
         request_id = ReqId
     }, {error, _Reason} = Error}, State) ->
 
-    reply(ReqId, Error),
+    reply_all(ReqId, Error),
     {ok, State}.
 
 -spec terminate(term(), term()) ->
@@ -215,7 +215,7 @@ terminate(_Reason, #state {
         metadata_timer_ref = MetadataTimerRef
     }) ->
 
-    reply(Requests, {error, shutdown}),
+    reply_all(Requests, {error, shutdown}),
     erlang:cancel_timer(BufferTimerRef),
     erlang:cancel_timer(MetadataTimerRef),
     ok.
@@ -238,17 +238,17 @@ reload_metatadata(#state {
     erlang:cancel_timer(MetadataTimerRef),
     handle_msg(?MSG_METADATA_DELAY, State).
 
-reply([], _Response) ->
+reply_all([], _Response) ->
     ok;
-reply([{_, undefined} | T], Response) ->
-    reply(T, Response);
-reply([{ReqId, Pid} | T], Response) ->
+reply_all([{_, undefined} | T], Response) ->
+    reply_all(T, Response);
+reply_all([{ReqId, Pid} | T], Response) ->
     Pid ! {ReqId, Response},
-    reply(T, Response);
-reply(ReqId, Response) ->
+    reply_all(T, Response);
+reply_all(ReqId, Response) ->
     case flare_queue:remove(ReqId) of
         {ok, {_PoolName, Requests}} ->
-            reply(Requests, Response);
+            reply_all(Requests, Response);
         {error, not_found} ->
             shackle_utils:warning_msg(?CLIENT,
                 "reply error: ~p~n", [not_found]),

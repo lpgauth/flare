@@ -3,6 +3,7 @@
   {vsn, "0.1.11"},
   {registered, []},
   {applications, [
+    foil,
     kernel,
     metal,
     stdlib,
