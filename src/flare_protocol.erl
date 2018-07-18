@@ -179,8 +179,10 @@ encode_bytes(Data) ->
     [<<(size(Data)):32>>, Data].
 
 encode_message(Message, Compresion) ->
-    Message2 = [<<?API_VERSION:8, Compresion:8>>, encode_bytes(undefined),
-        encode_bytes(Message)],
+    {Mega, Sec, Micro} = os:timestamp(),
+    Timestamp = Mega * 1000000 + Sec + trunc(Micro / 1000),
+    Message2 = [<<?API_VERSION_MESSAGE:8, Compresion:8, Timestamp:64>>,
+        encode_bytes(undefined), encode_bytes(Message)],
     [<<(erlang:crc32(Message2)):32>>, Message2].
 
 encode_partion(Partition, MessageSet) ->
