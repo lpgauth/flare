@@ -39,4 +39,3 @@
 
 %% ETS tables
 -define(ETS_TABLE_QUEUE, flare_queue).
--define(ETS_TABLE_TOPIC, flare_topic).

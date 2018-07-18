@@ -7,7 +7,6 @@
 -export([
     compress/2,
     compression/1,
-    ets_lookup_element/2,
     send_recv/3
 ]).
 
@@ -28,16 +27,6 @@ compression(none) ->
     ?COMPRESSION_NONE;
 compression(snappy) ->
     ?COMPRESSION_SNAPPY.
-
--spec ets_lookup_element(atom(), term()) ->
-    term().
-
-ets_lookup_element(Table, Key) ->
-    try ets:lookup_element(Table, Key, 2)
-    catch
-        error:badarg ->
-            undefined
-    end.
 
 -spec send_recv(inet:socket_address() | inet:hostname(), inet:port_number(),
     iodata()) -> {ok, binary()} | {error, term()}.
