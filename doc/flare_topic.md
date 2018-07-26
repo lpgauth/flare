@@ -74,7 +74,7 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-0">init/0</a></td><td></td></tr><tr><td valign="top"><a href="#server-1">server/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-1">start/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-2">start/2</a></td><td></td></tr><tr><td valign="top"><a href="#stop-1">stop/1</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-0">init/0</a></td><td></td></tr><tr><td valign="top"><a href="#server-1">server/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-1">start/1</a></td><td></td></tr><tr><td valign="top"><a href="#start-2">start/2</a></td><td></td></tr><tr><td valign="top"><a href="#stop-1">stop/1</a></td><td></td></tr><tr><td valign="top"><a href="#terminate-0">terminate/0</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -123,6 +123,15 @@ start(Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-t
 
 <pre><code>
 stop(Topic::<a href="#type-topic_name">topic_name()</a>) -&gt; ok | {error, atom()}
+</code></pre>
+<br />
+
+<a name="terminate-0"></a>
+
+### terminate/0 ###
+
+<pre><code>
+terminate() -&gt; ok
 </code></pre>
 <br />
 

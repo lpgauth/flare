@@ -16,7 +16,7 @@
 
 
 <pre><code>
-ext_req_id() = <a href="/Users/lpgauth/Git/flare/_build/default/lib/shackle/doc/shackle.md#type-request_id">shackle:request_id()</a>
+ext_req_id() = <a href="/Users/lp.gauthier/Git/flare/_build/default/lib/shackle/doc/shackle.md#type-request_id">shackle:request_id()</a>
 </code></pre>
 
 

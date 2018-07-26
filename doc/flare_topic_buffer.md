@@ -56,7 +56,7 @@ buffer_size() = non_neg_integer()
 
 
 <pre><code>
-client_option() = {ip, <a href="inet.md#type-ip_address">inet:ip_address()</a> | <a href="inet.md#type-hostname">inet:hostname()</a>} | {port, <a href="inet.md#type-port_number">inet:port_number()</a>} | {protocol, <a href="#type-protocol">protocol()</a>} | {reconnect, boolean()} | {reconnect_time_max, <a href="#type-time">time()</a> | infinity} | {reconnect_time_min, <a href="#type-time">time()</a>} | {socket_options, [<a href="gen_tcp.md#type-connect_option">gen_tcp:connect_option()</a> | <a href="gen_udp.md#type-option">gen_udp:option()</a>]}
+client_option() = {init_options, <a href="#type-init_options">init_options()</a>} | {ip, <a href="inet.md#type-ip_address">inet:ip_address()</a> | <a href="inet.md#type-hostname">inet:hostname()</a>} | {port, <a href="inet.md#type-port_number">inet:port_number()</a>} | {protocol, <a href="#type-protocol">protocol()</a>} | {reconnect, boolean()} | {reconnect_time_max, <a href="#type-time">time()</a> | infinity} | {reconnect_time_min, <a href="#type-time">time()</a>} | {socket_options, [<a href="gen_tcp.md#type-connect_option">gen_tcp:connect_option()</a> | <a href="gen_udp.md#type-option">gen_udp:option()</a>]}
 </code></pre>
 
 
@@ -87,6 +87,16 @@ compression() = 0 | 2
 
 <pre><code>
 compression_name() = none | snappy
+</code></pre>
+
+
+
+
+### <a name="type-init_options">init_options()</a> ###
+
+
+<pre><code>
+init_options() = term()
 </code></pre>
 
 
@@ -192,11 +202,31 @@ request() = {<a href="#type-req_id">req_id()</a>, pid() | undefined}
 
 
 
+### <a name="type-request_id">request_id()</a> ###
+
+
+<pre><code>
+request_id() = {<a href="#type-server_name">server_name()</a>, reference()}
+</code></pre>
+
+
+
+
 ### <a name="type-requests">requests()</a> ###
 
 
 <pre><code>
 requests() = [<a href="#type-request">request()</a>]
+</code></pre>
+
+
+
+
+### <a name="type-server_name">server_name()</a> ###
+
+
+<pre><code>
+server_name() = atom()
 </code></pre>
 
 
@@ -254,19 +284,28 @@ topic_opts() = [<a href="#type-topic_opt">topic_opt()</a>]
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-5">init/5</a></td><td></td></tr><tr><td valign="top"><a href="#produce-2">produce/2</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_code_change-4">system_code_change/4</a></td><td></td></tr><tr><td valign="top"><a href="#system_continue-3">system_continue/3</a></td><td></td></tr><tr><td valign="top"><a href="#system_get_state-1">system_get_state/1</a></td><td></td></tr><tr><td valign="top"><a href="#system_terminate-4">system_terminate/4</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#handle_msg-2">handle_msg/2</a></td><td></td></tr><tr><td valign="top"><a href="#init-3">init/3</a></td><td></td></tr><tr><td valign="top"><a href="#produce-2">produce/2</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-4">start_link/4</a></td><td></td></tr><tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
 
 ## Function Details ##
 
-<a name="init-5"></a>
+<a name="handle_msg-2"></a>
 
-### init/5 ###
+### handle_msg/2 ###
 
 <pre><code>
-init(Parent::pid(), Name::<a href="#type-buffer_name">buffer_name()</a>, Topic::<a href="#type-topic_name">topic_name()</a>, Opts::<a href="#type-topic_opts">topic_opts()</a>, Partitions::<a href="#type-partition_tuples">partition_tuples()</a>) -&gt; no_return()
+handle_msg(X1::term(), State::<a href="#type-state">state()</a>) -&gt; {ok, term()}
+</code></pre>
+<br />
+
+<a name="init-3"></a>
+
+### init/3 ###
+
+<pre><code>
+init(Name::<a href="#type-server_name">server_name()</a>, Parent::pid(), Opts::term()) -&gt; no_return()
 </code></pre>
 <br />
 
@@ -288,39 +327,12 @@ start_link(Name::<a href="#type-buffer_name">buffer_name()</a>, Topic::<a href="
 </code></pre>
 <br />
 
-<a name="system_code_change-4"></a>
+<a name="terminate-2"></a>
 
-### system_code_change/4 ###
-
-<pre><code>
-system_code_change(State::<a href="#type-state">state()</a>, Module::module(), OldVsn::undefined | term(), Extra::term()) -&gt; {ok, <a href="#type-state">state()</a>}
-</code></pre>
-<br />
-
-<a name="system_continue-3"></a>
-
-### system_continue/3 ###
+### terminate/2 ###
 
 <pre><code>
-system_continue(Parent::pid(), Debug::[], State::<a href="#type-state">state()</a>) -&gt; ok
-</code></pre>
-<br />
-
-<a name="system_get_state-1"></a>
-
-### system_get_state/1 ###
-
-<pre><code>
-system_get_state(State::<a href="#type-state">state()</a>) -&gt; {ok, <a href="#type-state">state()</a>}
-</code></pre>
-<br />
-
-<a name="system_terminate-4"></a>
-
-### system_terminate/4 ###
-
-<pre><code>
-system_terminate(Reason::term(), Parent::pid(), Debug::[], State::<a href="#type-state">state()</a>) -&gt; none()
+terminate(Reason::term(), State::term()) -&gt; ok
 </code></pre>
 <br />
 

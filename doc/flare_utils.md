@@ -34,7 +34,7 @@ compression_name() = none | snappy
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compress-2">compress/2</a></td><td></td></tr><tr><td valign="top"><a href="#compression-1">compression/1</a></td><td></td></tr><tr><td valign="top"><a href="#ets_lookup_element-2">ets_lookup_element/2</a></td><td></td></tr><tr><td valign="top"><a href="#send_recv-3">send_recv/3</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compress-2">compress/2</a></td><td></td></tr><tr><td valign="top"><a href="#compression-1">compression/1</a></td><td></td></tr><tr><td valign="top"><a href="#send_recv-3">send_recv/3</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -56,15 +56,6 @@ compress(X1::<a href="#type-compression">compression()</a>, Messages::iolist()) 
 
 <pre><code>
 compression(X1::<a href="#type-compression_name">compression_name()</a>) -&gt; <a href="#type-compression">compression()</a>
-</code></pre>
-<br />
-
-<a name="ets_lookup_element-2"></a>
-
-### ets_lookup_element/2 ###
-
-<pre><code>
-ets_lookup_element(Table::atom(), Key::term()) -&gt; term()
 </code></pre>
 <br />
 
