@@ -26,6 +26,7 @@
     buffer_size_max        :: undefined | pos_integer(),
     buffer_timer_ref       :: undefined | reference(),
     compression            :: compression(),
+    msg_api_version        :: msg_api_version(),
     metadata_delay         :: pos_integer(),
     metadata_timer_ref     :: undefined | reference(),
     name                   :: atom(),
@@ -48,16 +49,18 @@ produce(Pid, #state {
         acks = Acks,
         buffer = Buffer,
         compression = Compression,
+        msg_api_version = MsgApiVersion,
         partitions = Partitions,
         requests = Requests,
         topic = Topic
     }) ->
 
-    Messages = flare_protocol:encode_message_set(lists:reverse(Buffer)),
+    Messages = flare_protocol:encode_message_set(lists:reverse(Buffer),
+        ?COMPRESSION_NONE, MsgApiVersion),
     Messages2 = flare_utils:compress(Compression, Messages),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
     Request = flare_protocol:encode_produce(Topic, Partition, Messages2,
-        Acks, Compression),
+        Acks, Compression, MsgApiVersion),
 
     case shackle:cast(PoolName, {produce, Request}, Pid) of
         {ok, ReqId} ->
@@ -91,6 +94,8 @@ init(Name, Parent, Opts) ->
         ?DEFAULT_TOPIC_COMPRESSION)),
     MetadataDelay = ?LOOKUP(metadata_delay, TopicOpts,
         ?DEFAULT_TOPIC_METADATA_DELAY),
+    MsgApiVersion = ?LOOKUP(msg_api_version,
+        TopicOpts, ?DEFAULT_MESSAGE_API_VERSION),
 
     {ok, #state {
         acks = Acks,
@@ -98,9 +103,10 @@ init(Name, Parent, Opts) ->
         buffer_size_max = BufferSizeMax,
         buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
         compression = Compression,
-        name = Name,
+        msg_api_version = MsgApiVersion,
         metadata_delay = MetadataDelay,
         metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
+        name = Name,
         parent = Parent,
         partitions = Partitions,
         topic = Topic

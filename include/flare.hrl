@@ -1,6 +1,5 @@
 %% protocol
 -define(API_VERSION, 0).
--define(API_VERSION_MESSAGE, 1).
 -define(CLIENT_ID, "flare").
 -define(MAX_REQUEST_ID, 4294967296).
 -define(OFFSET, 0).
@@ -9,6 +8,8 @@
 
 -define(COMPRESSION_NONE, 0).
 -define(COMPRESSION_SNAPPY, 2).
+-define(MESSAGE_API_V0, 0).
+-define(MESSAGE_API_V1, 1).
 
 -define(ERROR_NONE, 0).
 -define(ERROR_OFFSET_OUT_OF_RANGE, 1).
@@ -89,6 +90,7 @@
                               ?COMPRESSION_SNAPPY.
 -type ext_req_id()         :: shackle:request_id().
 -type msg()                :: binary().
+-type msg_api_version()    :: 0..1.
 -type partition()          :: #partition {}.
 -type partition_id()       :: non_neg_integer().
 -type partition_tuple()    :: {partition_id(), atom(), broker()}.
@@ -105,5 +107,6 @@
                               {buffer_size, buffer_size()} |
                               {compression, compression_name()} |
                               {metadata_delay, pos_integer()} |
+                              {msg_api_version, msg_api_version()} |
                               {pool_size, pos_integer()}.
 -type topic_opts()         :: [topic_opt()].

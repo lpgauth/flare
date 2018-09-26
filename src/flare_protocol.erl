@@ -7,9 +7,9 @@
 -export([
     decode_metadata/1,
     decode_produce/1,
-    encode_produce/5,
+    encode_produce/6,
     encode_metadata/1,
-    encode_message_set/1,
+    encode_message_set/3,
     encode_request/4
 ]).
 
@@ -29,11 +29,11 @@ decode_produce(<<CorrelationId:32, Length:32, Rest/binary>>) ->
     {TopicArray, <<>>} = decode_topic_array(Length, [], Rest),
     {CorrelationId, TopicArray}.
 
--spec encode_produce(topic_name(), non_neg_integer(),
-    msg() | [msg()], integer(), compression()) -> iolist().
+-spec encode_produce(topic_name(), non_neg_integer(), msg() | [msg()],
+    integer(), compression(), msg_api_version()) -> iolist().
 
-encode_produce(Topic, Partition, Messages, Acks, Compression) ->
-    MessageSet = encode_message_set(Messages, Compression),
+encode_produce(Topic, Partition, Messages, Acks, Compression, MsgApiVersion) ->
+    MessageSet = encode_message_set(Messages, Compression, MsgApiVersion),
     Partition2 = encode_partion(Partition, MessageSet),
     Topic2 = [[encode_string(Topic), encode_array([Partition2])]],
     [<<Acks:16, (?TIMEOUT):32>>, encode_array(Topic2)].
@@ -44,24 +44,20 @@ encode_produce(Topic, Partition, Messages, Acks, Compression) ->
 encode_metadata(Topics) ->
     encode_array([encode_string(Topic) || Topic <- Topics]).
 
--spec encode_message_set(binary() | [binary()]) ->
-    iolist().
+-spec encode_message_set(binary() | [binary()], compression(),
+    msg_api_version()) -> iolist().
 
-encode_message_set(Messages) ->
-    encode_message_set(Messages, 0).
-
--spec encode_message_set(msg() | [msg()], compression()) ->
-    iolist().
-
-encode_message_set([], _Compression) ->
+encode_message_set([], _Compression, _MsgApiVersion) ->
     [];
-encode_message_set(Message, Compression) when is_binary(Message) ->
-    Message2 = encode_message(Message, Compression),
+encode_message_set(Message, Compression, MsgApiVersion)
+        when is_binary(Message) ->
+
+    Message2 = encode_message(Message, Compression, MsgApiVersion),
     [<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2];
-encode_message_set([Message | T], Compression) ->
-    Message2 = encode_message(Message, Compression),
+encode_message_set([Message | T], Compression, MsgApiVersion) ->
+    Message2 = encode_message(Message, Compression, MsgApiVersion),
     [[<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2],
-        encode_message_set(T, Compression)].
+        encode_message_set(T, Compression, MsgApiVersion)].
 
 -spec encode_request(integer(), integer(), iolist(), iolist()) ->
     iolist().
@@ -178,10 +174,14 @@ encode_bytes(undefined) ->
 encode_bytes(Data) ->
     [<<(size(Data)):32>>, Data].
 
-encode_message(Message, Compresion) ->
+encode_message(Message, Compresion, ?MESSAGE_API_V0) ->
+    Message2 = [<<0:8, Compresion:8>>,
+        encode_bytes(undefined), encode_bytes(Message)],
+    [<<(erlang:crc32(Message2)):32>>, Message2];
+encode_message(Message, Compresion, ?MESSAGE_API_V1) ->
     {Mega, Sec, Micro} = os:timestamp(),
     Timestamp = Mega * 1000000 + Sec + trunc(Micro / 1000),
-    Message2 = [<<?API_VERSION_MESSAGE:8, Compresion:8, Timestamp:64>>,
+    Message2 = [<<1:8, Compresion:8, Timestamp:64>>,
         encode_bytes(undefined), encode_bytes(Message)],
     [<<(erlang:crc32(Message2)):32>>, Message2].
 
