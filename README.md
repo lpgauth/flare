@@ -96,6 +96,12 @@ High Performance Erlang Kafka Producer
     <td>Compression configuration</td>
   </tr>
   <tr>
+    <td>msg_api_version</td>
+    <td>0..2</td>
+    <td>1</td>
+    <td>Message API version</td>
+  </tr>
+  <tr>
     <td>metadata_delay</td>
     <td>pos_integer()</td>
     <td>60000</td>

@@ -13,7 +13,8 @@ flare_test_() ->
 %% tests
 produce_subtest() ->
     Topic = <<"test">>,
-    ok = flare_topic:start(Topic),
+    Topic2 = <<"test2">>,
+
     {error, topic_already_stated} = flare_topic:start(Topic),
     ok = flare:produce(Topic, <<"event1">>, 5000),
     ok = flare:produce(Topic, <<"event1">>),
@@ -25,9 +26,22 @@ produce_subtest() ->
     ok = flare_topic:stop(Topic),
     {error, topic_not_started} = flare_topic:stop(Topic),
 
-    Topic2 = <<"test2">>,
     {error, no_metadata} = flare_topic:start(Topic2),
     {error, topic_not_started} = flare:produce(Topic2, <<"event2">>, 5000).
+
+produce_topic_otps_subtest() ->
+    assert_produce([{msg_api_version, 0}, {compression, none}]),
+    assert_produce([{msg_api_version, 1}, {compression, none}]),
+    assert_produce([{msg_api_version, 2}, {compression, none}]),
+    assert_produce([{msg_api_version, 0}, {compression, snappy}]),
+    assert_produce([{msg_api_version, 1}, {compression, snappy}]),
+    assert_produce([{msg_api_version, 2}, {compression, snappy}]).
+
+assert_produce(TopicOtps) ->
+    Topic = <<"test">>,
+    ok = flare_topic:start(Topic, TopicOtps),
+    ok = flare:produce(Topic, <<"event1">>, 5000),
+    ok = flare_topic:stop(Topic).
 
 % utils
 cleanup() ->

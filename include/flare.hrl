@@ -8,8 +8,9 @@
 
 -define(COMPRESSION_NONE, 0).
 -define(COMPRESSION_SNAPPY, 2).
--define(MESSAGE_API_V0, 0).
--define(MESSAGE_API_V1, 1).
+-define(MESSAGE_API_V1, 0).
+-define(MESSAGE_API_V2, 1).
+-define(MESSAGE_API_V3, 2).
 
 -define(ERROR_NONE, 0).
 -define(ERROR_OFFSET_OUT_OF_RANGE, 1).
@@ -90,7 +91,7 @@
                               ?COMPRESSION_SNAPPY.
 -type ext_req_id()         :: shackle:request_id().
 -type msg()                :: binary().
--type msg_api_version()    :: 0..1.
+-type msg_api_version()    :: ?MESSAGE_API_V1 | ?MESSAGE_API_V2 | ?MESSAGE_API_V3.
 -type partition()          :: #partition {}.
 -type partition_id()       :: non_neg_integer().
 -type partition_tuple()    :: {partition_id(), atom(), broker()}.

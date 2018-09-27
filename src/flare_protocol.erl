@@ -174,11 +174,11 @@ encode_bytes(undefined) ->
 encode_bytes(Data) ->
     [<<(size(Data)):32>>, Data].
 
-encode_message(Message, Compresion, ?MESSAGE_API_V0) ->
+encode_message(Message, Compresion, ?MESSAGE_API_V1) ->
     Message2 = [<<0:8, Compresion:8>>,
         encode_bytes(undefined), encode_bytes(Message)],
     [<<(erlang:crc32(Message2)):32>>, Message2];
-encode_message(Message, Compresion, ?MESSAGE_API_V1) ->
+encode_message(Message, Compresion, ?MESSAGE_API_V2) ->
     {Mega, Sec, Micro} = os:timestamp(),
     Timestamp = Mega * 1000000 + Sec + trunc(Micro / 1000),
     Message2 = [<<1:8, Compresion:8, Timestamp:64>>,

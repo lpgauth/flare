@@ -55,12 +55,18 @@ produce(Pid, #state {
         topic = Topic
     }) ->
 
-    Messages = flare_protocol:encode_message_set(lists:reverse(Buffer),
-        ?COMPRESSION_NONE, MsgApiVersion),
-    Messages2 = flare_utils:compress(Compression, Messages),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
-    Request = flare_protocol:encode_produce(Topic, Partition, Messages2,
-        Acks, Compression, MsgApiVersion),
+    Request = case MsgApiVersion of
+        2 ->
+            % TODOD: implement Record Batches
+            [];
+        _ ->
+            Messages = flare_protocol:encode_message_set(lists:reverse(Buffer),
+                ?COMPRESSION_NONE, MsgApiVersion),
+            Messages2 = flare_utils:compress(Compression, Messages),
+            flare_protocol:encode_produce(Topic, Partition, Messages2,
+                Acks, Compression, MsgApiVersion)
+    end,
 
     case shackle:cast(PoolName, {produce, Request}, Pid) of
         {ok, ReqId} ->
