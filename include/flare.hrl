@@ -1,5 +1,4 @@
 %% protocol
--define(API_VERSION, 0).
 -define(CLIENT_ID, "flare").
 -define(MAX_REQUEST_ID, 4294967296).
 -define(OFFSET, 0).
@@ -11,6 +10,9 @@
 -define(MESSAGE_API_V1, 0).
 -define(MESSAGE_API_V2, 1).
 -define(MESSAGE_API_V3, 2).
+
+-define(METADATA_API_VERSION, 0).
+-define(PRODUCE_API_VERSION, 3).
 
 -define(ERROR_NONE, 0).
 -define(ERROR_OFFSET_OUT_OF_RANGE, 1).

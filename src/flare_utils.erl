@@ -7,7 +7,8 @@
 -export([
     compress/2,
     compression/1,
-    send_recv/3
+    send_recv/3,
+    timestamp/0
 ]).
 
 %% public
@@ -55,3 +56,10 @@ send_recv(Ip, Port, Data) ->
             error_logger:error_msg("failed to connect: ~p~n", [Reason]),
             {error, Reason}
     end.
+
+-spec timestamp() ->
+    pos_integer().
+
+timestamp() ->
+    {Mega, Sec, Micro} = os:timestamp(),
+    (Mega * 1000000 + Sec) * 1000 + Micro.

@@ -46,26 +46,17 @@
     ok.
 
 produce(Pid, #state {
-        acks = Acks,
-        buffer = Buffer,
-        compression = Compression,
         msg_api_version = MsgApiVersion,
         partitions = Partitions,
-        requests = Requests,
-        topic = Topic
-    }) ->
+        requests = Requests
+    } = State) ->
 
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
+
     Request = case MsgApiVersion of
-        2 ->
-            % TODOD: implement Record Batches
-            [];
-        _ ->
-            Messages = flare_protocol:encode_message_set(lists:reverse(Buffer),
-                ?COMPRESSION_NONE, MsgApiVersion),
-            Messages2 = flare_utils:compress(Compression, Messages),
-            flare_protocol:encode_produce(Topic, Partition, Messages2,
-                Acks, Compression, MsgApiVersion)
+        0 -> produce_message_set(Partition, State);
+        1 -> produce_message_set(Partition, State);
+        2 -> produce_record_batch(Partition, State)
     end,
 
     case shackle:cast(PoolName, {produce, Request}, Pid) of
@@ -162,7 +153,7 @@ handle_msg(?MSG_METADATA_DELAY, #state {
                 metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY)
             }}
     end;
-handle_msg({produce, ReqId, Message, Size, Pid}, #state {
+handle_msg({produce, ReqId, Message, Timestamp, Pid, Size}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
@@ -172,7 +163,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
     } = State) when (BufferSize + Size) > SizeMax ->
 
     async_produce(State#state {
-        buffer = [Message | Buffer],
+        buffer = [{Message, Timestamp} | Buffer],
         buffer_count = BufferCount + 1,
         buffer_size = BufferSize + Size,
         requests = [{ReqId, Pid} | Requests]
@@ -186,7 +177,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         buffer_size = 0,
         requests = []
     }};
-handle_msg({produce, ReqId, Message, Size, Pid}, #state {
+handle_msg({produce, ReqId, Message, Timestamp, Pid, Size}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
         buffer_size = BufferSize,
@@ -197,7 +188,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
     shackle_backlog:decrement(Name, Size),
 
     {ok, State#state {
-        buffer = [Message | Buffer],
+        buffer = [{Message, Timestamp} | Buffer],
         buffer_count = BufferCount + 1,
         buffer_size = BufferSize + Size,
         requests = [{ReqId, Pid} | Requests]
@@ -242,6 +233,33 @@ maybe_reload_metadata({error, unknown_topic_or_partition}, State) ->
     reload_metatadata(State);
 maybe_reload_metadata(_, State) ->
     {ok, State}.
+
+produce_message_set(Partition, #state {
+        acks = Acks,
+        buffer = Buffer,
+        compression = Compression,
+        msg_api_version = MsgApiVersion,
+        topic = Topic
+    }) ->
+
+    Requests = lists:reverse(Buffer),
+    Messages = flare_protocol:encode_message_set(Requests,
+        ?COMPRESSION_NONE, MsgApiVersion),
+    Timestamp = flare_utils:timestamp(),
+    Messages2 = {flare_utils:compress(Compression, Messages), Timestamp},
+    flare_protocol:encode_produce(Topic, Partition, Messages2, Acks,
+        Compression, MsgApiVersion).
+
+produce_record_batch(Partition, #state {
+        acks = Acks,
+        buffer = Buffer,
+        compression = Compression,
+        msg_api_version = MsgApiVersion,
+        topic = Topic
+    }) ->
+
+    flare_protocol:encode_produce(Topic, Partition, lists:reverse(Buffer),
+        Acks, Compression, MsgApiVersion).
 
 reload_metatadata(#state {
         metadata_timer_ref = MetadataTimerRef

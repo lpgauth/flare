@@ -41,7 +41,7 @@ handle_request({produce, Request}, #state {
 
     RequestId = request_id(RequestCounter),
     Data = flare_protocol:encode_request(?REQUEST_PRODUCE,
-        RequestId, ?CLIENT_ID, Request),
+        ?PRODUCE_API_VERSION, RequestId, ?CLIENT_ID, Request),
 
     {ok, RequestId, Data, State#state {
         request_counter = RequestCounter + 1

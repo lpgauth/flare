@@ -10,7 +10,7 @@
     encode_produce/6,
     encode_metadata/1,
     encode_message_set/3,
-    encode_request/4
+    encode_request/5
 ]).
 
 %% public
@@ -26,17 +26,41 @@ decode_metadata(<<CorrelationId:32, Rest/binary>>) ->
     term().
 
 decode_produce(<<CorrelationId:32, Length:32, Rest/binary>>) ->
-    {TopicArray, <<>>} = decode_topic_array(Length, [], Rest),
+    {TopicArray, <<ThrottleTime:32>>} = decode_topic_array(Length, [], Rest),
     {CorrelationId, TopicArray}.
 
 -spec encode_produce(topic_name(), non_neg_integer(), msg() | [msg()],
     integer(), compression(), msg_api_version()) -> iolist().
 
-encode_produce(Topic, Partition, Messages, Acks, Compression, MsgApiVersion) ->
+encode_produce(Topic, Partition, Messages, Acks, Compression, MsgApiVersion)
+        when MsgApiVersion =:= ?MESSAGE_API_V1;
+        MsgApiVersion =:= ?MESSAGE_API_V2 ->
+
     MessageSet = encode_message_set(Messages, Compression, MsgApiVersion),
-    Partition2 = encode_partion(Partition, MessageSet),
+    Partition2 = [<<Partition:32, (iolist_size(MessageSet)):32>>, MessageSet],
     Topic2 = [[encode_string(Topic), encode_array([Partition2])]],
-    [<<Acks:16, (?TIMEOUT):32>>, encode_array(Topic2)].
+    [<<Acks:16, (?TIMEOUT):32>>, encode_array(Topic2)];
+
+encode_produce(Topic, Partition, Messages, Acks, Compression, MsgApiVersion)
+        when MsgApiVersion =:= ?MESSAGE_API_V3 ->
+
+    RecordBatch = encode_record_batch(Messages, Compression, MsgApiVersion),
+
+    Partition2 = [
+        <<Partition:32,
+        (iolist_size(RecordBatch)):32>>,
+        RecordBatch
+    ],
+
+    Topic2 = [[encode_string(Topic), encode_array([Partition2])]],
+    TransactionalId = encode_string(undefined),
+
+    [
+        TransactionalId,
+        <<Acks:16,
+        (?TIMEOUT):32>>,
+        encode_array(Topic2)
+    ].
 
 -spec encode_metadata([iolist()]) ->
     iolist().
@@ -50,7 +74,7 @@ encode_metadata(Topics) ->
 encode_message_set([], _Compression, _MsgApiVersion) ->
     [];
 encode_message_set(Message, Compression, MsgApiVersion)
-        when is_binary(Message) ->
+        when is_tuple(Message) ->
 
     Message2 = encode_message(Message, Compression, MsgApiVersion),
     [<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2];
@@ -59,17 +83,18 @@ encode_message_set([Message | T], Compression, MsgApiVersion) ->
     [[<<?OFFSET:64, (iolist_size(Message2)):32>>, Message2],
         encode_message_set(T, Compression, MsgApiVersion)].
 
--spec encode_request(integer(), integer(), iolist(), iolist()) ->
+-spec encode_request(integer(), integer(), integer(), iolist(), iolist()) ->
     iolist().
 
-encode_request(ApiKey, CorrelationId, ClientId, Request) ->
-    [<<ApiKey:16, ?API_VERSION:16, CorrelationId:32>>,
+encode_request(ApiKey, ApiVersion, CorrelationId, ClientId, Request) ->
+    [<<ApiKey:16, ApiVersion:16, CorrelationId:32>>,
         encode_string(ClientId), Request].
 
 %% private
 decode_broker(<<NodeId:32, Rest/binary>>) ->
     {Host, Rest2} = decode_string(Rest),
     {Port, Rest3} = decode_int(Rest2),
+
     {#broker {
         node_id = NodeId,
         host = Host,
@@ -97,7 +122,9 @@ decode_int_array(Length, Acc, Rest) ->
     {Int, Rest2} = decode_int(Rest),
     decode_int_array(Length - 1, [Int | Acc], Rest2).
 
-decode_partition(<<Partition:32, ErrorCode:16, Offset:64, Rest/binary>>) ->
+decode_partition(<<Partition:32, ErrorCode:16, Offset:64, LogAppendTime:64,
+    Rest/binary>>) ->
+
     {#partition {
         partition = Partition,
         error_code = ErrorCode,
@@ -137,6 +164,7 @@ decode_string(<<Pos:16, Rest/binary>>) ->
 decode_topic(Rest) ->
     {Topic, <<Length:32, Rest2/binary>>} = decode_string(Rest),
     {Partions, Rest3} = decode_partion_array(Length, [], Rest2),
+
     {#topic {
         topic_name = Topic,
         partions = Partions
@@ -146,11 +174,13 @@ decode_topic_array(0, Acc, Rest) ->
     {Acc, Rest};
 decode_topic_array(Length, Acc, Rest) ->
     {Topic, Rest2} = decode_topic(Rest),
+
     decode_topic_array(Length - 1, [Topic | Acc], Rest2).
 
 decode_topic_metadata(<<ErrorCode:16, Rest/binary>>) ->
     {TopicName, <<Length:32, Rest3/binary>>} = decode_string(Rest),
     {PartitionMetadata, Rest4} = decode_partition_metadata(Length, [], Rest3),
+
     {#topic_metadata {
         topic_error_code = ErrorCode,
         topic_name = TopicName,
@@ -169,24 +199,97 @@ decode_topic_metadata_array(Length, Acc, Rest) ->
 encode_array(Array) ->
     [<<(length(Array)):32>>, Array].
 
+encode_attributes(?COMPRESSION_NONE) ->
+    <<0, 0>>;
+encode_attributes(?COMPRESSION_SNAPPY) ->
+    <<0, 2>>.
+
 encode_bytes(undefined) ->
     <<-1:32/signed>>;
 encode_bytes(Data) ->
-    [<<(size(Data)):32>>, Data].
+    [<<(iolist_size(Data)):32>>, Data].
 
-encode_message(Message, Compresion, ?MESSAGE_API_V1) ->
+encode_bytes_v2(undefined) ->
+    encode_varint(-1);
+encode_bytes_v2(Data) ->
+    [encode_varint(iolist_size(Data)), Data].
+
+encode_message({Message, _Timestamp}, Compresion, ?MESSAGE_API_V1) ->
     Message2 = [<<0:8, Compresion:8>>,
         encode_bytes(undefined), encode_bytes(Message)],
     [<<(erlang:crc32(Message2)):32>>, Message2];
-encode_message(Message, Compresion, ?MESSAGE_API_V2) ->
-    {Mega, Sec, Micro} = os:timestamp(),
-    Timestamp = Mega * 1000000 + Sec + trunc(Micro / 1000),
+encode_message({Message, Timestamp}, Compresion, ?MESSAGE_API_V2) ->
     Message2 = [<<1:8, Compresion:8, Timestamp:64>>,
         encode_bytes(undefined), encode_bytes(Message)],
     [<<(erlang:crc32(Message2)):32>>, Message2].
 
-encode_partion(Partition, MessageSet) ->
-    [<<Partition:32, (iolist_size(MessageSet)):32>>, MessageSet].
+encode_record({Message, _Timestamp}) ->
+    Attributes = <<0:8>>,
+    TimestampDelta = <<0>>,
+    OffsetDelta = <<0>>,
+    Key = encode_bytes_v2(undefined),
+    Value = encode_bytes_v2(Message),
+    Headers = encode_varint(0), % empty array
+
+    Body = [
+        Attributes,
+        TimestampDelta,
+        OffsetDelta,
+        Key,
+        Value,
+        Headers
+    ],
+
+    [encode_varint(iolist_size(Body)), Body].
+
+encode_records(Messages) ->
+    [encode_record(Message) || Message <- Messages].
+
+encode_record_batch([{_, Timestamp} | T] = Messages, Compression,
+    _MsgApiVersion) ->
+
+    Attributes = encode_attributes(Compression),
+    {MaxTimestamp, Count} = max_timestamp(T, Timestamp, 1),
+    LastOffsetDelta = <<(Count - 1):32/unsigned-integer>>,
+    FirstTimestamp = <<Timestamp:64/unsigned-integer>>,
+    MaxTimestamp2 = <<MaxTimestamp:64/unsigned-integer>>,
+    ProducerId = <<-1:64/unsigned-integer>>,
+    ProducerEpoch = <<-1:16/unsigned-integer>>,
+    BaseSequence = <<-1:32/unsigned-integer>>,
+    Records = encode_records(Messages),
+    Records2 = flare_utils:compress(Compression, Records),
+
+    Body = [
+        Attributes,
+        LastOffsetDelta,
+        FirstTimestamp,
+        MaxTimestamp2,
+        ProducerId,
+        ProducerEpoch,
+        BaseSequence,
+        <<(length(Messages)):32>>,
+        Records2
+    ],
+
+    PartitionLeaderEpoch = <<-1:32/unsigned-integer>>,
+    Magic = <<2:8/unsigned-integer>>,
+    CRC = <<(crc32cer:nif(Body)):32/unsigned-integer>>,
+
+    Body2 = [
+        PartitionLeaderEpoch,
+        Magic,
+        CRC,
+        Body
+    ],
+
+    BaseOffset = <<0:64/unsigned-integer>>,
+    BatchLength = <<(iolist_size(Body2)):32/unsigned-integer>>,
+
+    [
+        BaseOffset,
+        BatchLength,
+        Body2
+    ].
 
 encode_string(undefined) ->
     <<-1:16/signed>>;
@@ -194,3 +297,23 @@ encode_string(Data) when is_binary(Data) ->
     [<<(size(Data)):16>>, Data];
 encode_string(Data) ->
     [<<(length(Data)):16>>, Data].
+
+encode_varint(Int) ->
+    I = (Int bsl 1) bxor (Int bsr 63),
+    H = I bsr 7,
+    L = I band 127,
+    case H =:= 0 of
+        true  ->
+            [L];
+        false ->
+            [128 + L | encode_varint(H)]
+    end.
+
+max_timestamp([], Timestamp, Count) ->
+    {Timestamp, Count};
+max_timestamp([{T, Timestamp2} | T], Timestamp, Count)
+    when Timestamp2 > Timestamp ->
+
+    max_timestamp(T, Timestamp2, Count + 1);
+max_timestamp([_ | T], Timestamp, Count)  ->
+    max_timestamp(T, Timestamp, Count + 1).

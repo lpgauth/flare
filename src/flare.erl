@@ -7,8 +7,10 @@
 -export([
     async_produce/2,
     async_produce/3,
+    async_produce/4,
     produce/2,
     produce/3,
+    produce/4,
     receive_response/1,
     receive_response/2
 ]).
@@ -18,19 +20,26 @@
     {ok, req_id()} | {error, atom()}.
 
 async_produce(Topic, Message) ->
-    async_produce(Topic, Message, self()).
+    async_produce(Topic, Message, flare_utils:timestamp()).
 
--spec async_produce(topic_name(), msg(), pid() | undefined) ->
+-spec async_produce(topic_name(), msg(), erlang:timestamp()) ->
     {ok, req_id()} | {error, atom()}.
 
-async_produce(Topic, Message, Pid) ->
+async_produce(Topic, Message, Timestamp) ->
+    async_produce(Topic, Message, Timestamp, self()).
+
+-spec async_produce(topic_name(), msg(), erlang:timestamp(),
+    pid() | undefined) -> {ok, req_id()} | {error, atom()}.
+
+async_produce(Topic, Message, Timestamp, Pid) ->
     case flare_topic:server(Topic) of
         {ok, {BufferSize, Server}} ->
             Size = size(Message),
             case shackle_backlog:check(Server, BufferSize * 4, Size) of
                 true ->
                     ReqId = {os:timestamp(), self()},
-                    Server ! {produce, ReqId, Message, Size, Pid},
+                    Request = {produce, ReqId, Message, Timestamp, Pid, Size},
+                    Server ! Request,
                     {ok, ReqId};
                 false ->
                     {error, backlog_full}
@@ -43,13 +52,19 @@ async_produce(Topic, Message, Pid) ->
     ok | {error, atom()}.
 
 produce(Topic, Message) ->
-    produce(Topic, Message, ?DEFAULT_TIMEOUT).
+    produce(Topic, Message, flare_utils:timestamp()).
 
--spec produce(topic_name(), msg(), pos_integer()) ->
+-spec produce(topic_name(), msg(), erlang:timestamp()) ->
     ok | {error, atom()}.
 
-produce(Topic, Message, Timeout) ->
-    case async_produce(Topic, Message, self()) of
+produce(Topic, Message, Timestmap) ->
+    produce(Topic, Message, Timestmap, ?DEFAULT_TIMEOUT).
+
+-spec produce(topic_name(), msg(), erlang:timestamp(), pos_integer()) ->
+    ok | {error, atom()}.
+
+produce(Topic, Message, Timestamp, Timeout) ->
+    case async_produce(Topic, Message, Timestamp, self()) of
         {ok, ReqId} ->
             receive_response(ReqId, Timeout);
         {error, Reason} ->
