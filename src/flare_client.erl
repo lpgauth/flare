@@ -35,13 +35,13 @@ setup(_Socket, State) ->
 -spec handle_request(term(), state()) ->
     {ok, non_neg_integer(), iolist(), state()}.
 
-handle_request({produce, Request}, #state {
+handle_request({produce, ApiVersion, Request}, #state {
         request_counter = RequestCounter
     } = State) ->
 
     RequestId = request_id(RequestCounter),
-    Data = flare_protocol:encode_request(?REQUEST_PRODUCE,
-        ?PRODUCE_API_VERSION, RequestId, ?CLIENT_ID, Request),
+    Data = flare_protocol:encode_request(?PRODUCE_API_KEY,
+        ApiVersion, RequestId, ?CLIENT_ID, Request),
 
     {ok, RequestId, Data, State#state {
         request_counter = RequestCounter + 1

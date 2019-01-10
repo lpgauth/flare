@@ -1,19 +1,20 @@
 %% protocol
 -define(CLIENT_ID, "flare").
--define(MAX_REQUEST_ID, 4294967296).
--define(OFFSET, 0).
--define(REQUEST_PRODUCE, 0).
--define(REQUEST_METADATA, 3).
-
 -define(COMPRESSION_NONE, 0).
 -define(COMPRESSION_SNAPPY, 2).
--define(MESSAGE_API_V1, 0).
--define(MESSAGE_API_V2, 1).
--define(MESSAGE_API_V3, 2).
+-define(MAX_REQUEST_ID, 4294967296).
+-define(MESSAGE_API_0, 0).
+-define(MESSAGE_API_1, 1).
+-define(MESSAGE_API_2, 2).
+-define(METADATA_API_0, 0).
+-define(METADATA_API_KEY, 3).
+-define(OFFSET, 0).
+-define(PRODUCE_API_0, 0).
+-define(PRODUCE_API_2, 2).
+-define(PRODUCE_API_3, 3).
+-define(PRODUCE_API_KEY, 0).
 
--define(METADATA_API_VERSION, 0).
--define(PRODUCE_API_VERSION, 3).
-
+%% errors
 -define(ERROR_NONE, 0).
 -define(ERROR_OFFSET_OUT_OF_RANGE, 1).
 -define(ERROR_CORRUPT_MESSAGE, 2).
@@ -85,31 +86,30 @@
 }).
 
 %% types
--type broker()             :: #broker {}.
--type buffer_name()        :: atom().
--type buffer_size()        :: non_neg_integer().
--type compression_name()   :: none | snappy.
--type compression()        :: ?COMPRESSION_NONE |
-                              ?COMPRESSION_SNAPPY.
--type ext_req_id()         :: shackle:request_id().
--type msg()                :: binary().
--type msg_api_version()    :: ?MESSAGE_API_V1 | ?MESSAGE_API_V2 | ?MESSAGE_API_V3.
--type partition()          :: #partition {}.
--type partition_id()       :: non_neg_integer().
--type partition_tuple()    :: {partition_id(), atom(), broker()}.
--type partition_tuples()   :: [partition_tuple()].
--type partition_metadata() :: #partition_metadata {}.
--type request()            :: {req_id(), pid() | undefined}.
--type requests()           :: [request()].
--type req_id()             :: {erlang:timestamp(), pid()}.
--type topic()              :: #topic {}.
--type topic_name()         :: binary().
--type topic_metadata()     :: #topic_metadata {}.
--type topic_opt()          :: {acks, 0..65535} |
-                              {buffer_delay, pos_integer()} |
-                              {buffer_size, buffer_size()} |
-                              {compression, compression_name()} |
-                              {metadata_delay, pos_integer()} |
-                              {msg_api_version, msg_api_version()} |
-                              {pool_size, pos_integer()}.
--type topic_opts()         :: [topic_opt()].
+-type broker()              :: #broker {}.
+-type buffer_name()         :: atom().
+-type buffer_size()         :: non_neg_integer().
+-type compression_name()    :: none | snappy.
+-type compression()         :: ?COMPRESSION_NONE |
+                               ?COMPRESSION_SNAPPY.
+-type ext_req_id()          :: shackle:request_id().
+-type msg()                 :: binary().
+-type partition()           :: #partition {}.
+-type partition_id()        :: non_neg_integer().
+-type partition_metadata()  :: #partition_metadata {}.
+-type partition_tuple()     :: {partition_id(), atom(), broker()}.
+-type partition_tuples()    :: [partition_tuple()].
+-type produce_api_version() :: ?PRODUCE_API_0 | ?PRODUCE_API_2 | ?PRODUCE_API_3.
+-type request()             :: {req_id(), pid() | undefined}.
+-type requests()            :: [request()].
+-type req_id()              :: {erlang:timestamp(), pid()}.
+-type topic()               :: #topic {}.
+-type topic_name()          :: binary().
+-type topic_metadata()      :: #topic_metadata {}.
+-type topic_opt()           :: {acks, 0..65535} |
+                               {buffer_delay, pos_integer()} |
+                               {buffer_size, buffer_size()} |
+                               {compression, compression_name()} |
+                               {metadata_delay, pos_integer()} |
+                               {pool_size, pos_integer()}.
+-type topic_opts()          :: [topic_opt()].

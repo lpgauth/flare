@@ -15,6 +15,8 @@
     receive_response/2
 ]).
 
+-type timestamp() :: pos_integer().
+
 %% public
 -spec async_produce(topic_name(), msg()) ->
     {ok, req_id()} | {error, atom()}.
@@ -22,13 +24,13 @@
 async_produce(Topic, Message) ->
     async_produce(Topic, Message, flare_utils:timestamp()).
 
--spec async_produce(topic_name(), msg(), erlang:timestamp()) ->
+-spec async_produce(topic_name(), msg(), timestamp()) ->
     {ok, req_id()} | {error, atom()}.
 
 async_produce(Topic, Message, Timestamp) ->
     async_produce(Topic, Message, Timestamp, self()).
 
--spec async_produce(topic_name(), msg(), erlang:timestamp(),
+-spec async_produce(topic_name(), msg(), timestamp(),
     pid() | undefined) -> {ok, req_id()} | {error, atom()}.
 
 async_produce(Topic, Message, Timestamp, Pid) ->
@@ -54,13 +56,13 @@ async_produce(Topic, Message, Timestamp, Pid) ->
 produce(Topic, Message) ->
     produce(Topic, Message, flare_utils:timestamp()).
 
--spec produce(topic_name(), msg(), erlang:timestamp()) ->
+-spec produce(topic_name(), msg(), timestamp()) ->
     ok | {error, atom()}.
 
 produce(Topic, Message, Timestmap) ->
     produce(Topic, Message, Timestmap, ?DEFAULT_TIMEOUT).
 
--spec produce(topic_name(), msg(), erlang:timestamp(), pos_integer()) ->
+-spec produce(topic_name(), msg(), timestamp(), pos_integer()) ->
     ok | {error, atom()}.
 
 produce(Topic, Message, Timestamp, Timeout) ->

@@ -96,12 +96,6 @@ High Performance Erlang Kafka Producer
     <td>Compression configuration</td>
   </tr>
   <tr>
-    <td>msg_api_version</td>
-    <td>0..2</td>
-    <td>1</td>
-    <td>Message API version</td>
-  </tr>
-  <tr>
     <td>metadata_delay</td>
     <td>pos_integer()</td>
     <td>60000</td>
@@ -112,6 +106,12 @@ High Performance Erlang Kafka Producer
     <td>pos_integer()</td>
     <td>2</td>
     <td>Number of topic buffer proccesses</td>
+  </tr>
+  <tr>
+    <td>produce_api_version</td>
+    <td>0|3</td>
+    <td>1</td>
+    <td>Produce API version</td>
   </tr>
 </table>
 

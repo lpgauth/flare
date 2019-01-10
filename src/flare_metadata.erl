@@ -53,8 +53,8 @@ topic([], _Topic) ->
     {error, no_metadata};
 topic([{Ip, Port} | T], Topic) ->
     Request = flare_protocol:encode_metadata([Topic]),
-    Data = flare_protocol:encode_request(?REQUEST_METADATA,
-        ?METADATA_API_VERSION, 0, ?CLIENT_ID, Request),
+    Data = flare_protocol:encode_request(?METADATA_API_KEY, ?METADATA_API_0,
+        0, ?CLIENT_ID, Request),
     case flare_utils:send_recv(Ip, Port, Data) of
         {ok, Data2} ->
             {0, Brokers, TopicMetadata} =

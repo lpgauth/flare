@@ -34,17 +34,17 @@ produce_subtest() ->
         flare_utils:timestamp(), 5000).
 
 produce_topic_otps_subtest() ->
-    % assert_produce([{msg_api_version, 0}, {compression, none}]),
-    % assert_produce([{msg_api_version, 1}, {compression, none}]),
-    assert_produce([{msg_api_version, 2}, {compression, none}]),
-    % assert_produce([{msg_api_version, 0}, {compression, snappy}]),
-    % assert_produce([{msg_api_version, 1}, {compression, snappy}]),
-    assert_produce([{msg_api_version, 2}, {compression, snappy}]).
+    assert_produce([{produce_api_version, 0}, {compression, none}], <<"vsn0">>),
+    assert_produce([{produce_api_version, 0}, {compression, snappy}], <<"vsn0_snappy">>),
+    assert_produce([{produce_api_version, 2}, {compression, none}], <<"vsn2">>),
+    assert_produce([{produce_api_version, 2}, {compression, snappy}], <<"vsn2_snappy">>),
+    assert_produce([{produce_api_version, 3}, {compression, none}], <<"vsn3">>),
+    assert_produce([{produce_api_version, 3}, {compression, snappy}], <<"vsn3_snappy">>).
 
-assert_produce(TopicOtps) ->
+assert_produce(TopicOtps, Msg) ->
     Topic = <<"test">>,
     ok = flare_topic:start(Topic, TopicOtps),
-    ok = flare:produce(Topic, <<"event1">>, flare_utils:timestamp(), 5000),
+    ok = flare:produce(Topic, Msg, flare_utils:timestamp(), 5000),
     ok = flare_topic:stop(Topic).
 
 % utils

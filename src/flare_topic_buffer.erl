@@ -26,12 +26,12 @@
     buffer_size_max        :: undefined | pos_integer(),
     buffer_timer_ref       :: undefined | reference(),
     compression            :: compression(),
-    msg_api_version        :: msg_api_version(),
     metadata_delay         :: pos_integer(),
     metadata_timer_ref     :: undefined | reference(),
     name                   :: atom(),
     parent                 :: pid(),
     partitions             :: undefined | list(),
+    produce_api_version    :: produce_api_version(),
     requests = []          :: requests(),
     topic                  :: topic_name()
 }).
@@ -46,20 +46,20 @@
     ok.
 
 produce(Pid, #state {
-        msg_api_version = MsgApiVersion,
+        acks = Acks,
+        buffer = Buffer,
+        compression = Compression,
         partitions = Partitions,
-        requests = Requests
-    } = State) ->
+        produce_api_version = ApiVersion,
+        requests = Requests,
+        topic = Topic
+    }) ->
 
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
+    Request = flare_protocol:encode_produce(ApiVersion, Topic, Partition,
+        lists:reverse(Buffer), Acks, Compression),
 
-    Request = case MsgApiVersion of
-        0 -> produce_message_set(Partition, State);
-        1 -> produce_message_set(Partition, State);
-        2 -> produce_record_batch(Partition, State)
-    end,
-
-    case shackle:cast(PoolName, {produce, Request}, Pid) of
+    case shackle:cast(PoolName, {produce, ApiVersion, Request}, Pid) of
         {ok, ReqId} ->
             flare_queue:add(ReqId, PoolName, Requests);
         {error, Reason} ->
@@ -91,8 +91,8 @@ init(Name, Parent, Opts) ->
         ?DEFAULT_TOPIC_COMPRESSION)),
     MetadataDelay = ?LOOKUP(metadata_delay, TopicOpts,
         ?DEFAULT_TOPIC_METADATA_DELAY),
-    MsgApiVersion = ?LOOKUP(msg_api_version,
-        TopicOpts, ?DEFAULT_MESSAGE_API_VERSION),
+    ProduceApiVersion = ?LOOKUP(produce_api_version, TopicOpts,
+        ?DEFAULT_PRODUCE_API_VERSION),
 
     {ok, #state {
         acks = Acks,
@@ -100,12 +100,12 @@ init(Name, Parent, Opts) ->
         buffer_size_max = BufferSizeMax,
         buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
         compression = Compression,
-        msg_api_version = MsgApiVersion,
         metadata_delay = MetadataDelay,
         metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
         name = Name,
         parent = Parent,
         partitions = Partitions,
+        produce_api_version = ProduceApiVersion,
         topic = Topic
     }}.
 
@@ -233,33 +233,6 @@ maybe_reload_metadata({error, unknown_topic_or_partition}, State) ->
     reload_metatadata(State);
 maybe_reload_metadata(_, State) ->
     {ok, State}.
-
-produce_message_set(Partition, #state {
-        acks = Acks,
-        buffer = Buffer,
-        compression = Compression,
-        msg_api_version = MsgApiVersion,
-        topic = Topic
-    }) ->
-
-    Requests = lists:reverse(Buffer),
-    Messages = flare_protocol:encode_message_set(Requests,
-        ?COMPRESSION_NONE, MsgApiVersion),
-    Timestamp = flare_utils:timestamp(),
-    Messages2 = {flare_utils:compress(Compression, Messages), Timestamp},
-    flare_protocol:encode_produce(Topic, Partition, Messages2, Acks,
-        Compression, MsgApiVersion).
-
-produce_record_batch(Partition, #state {
-        acks = Acks,
-        buffer = Buffer,
-        compression = Compression,
-        msg_api_version = MsgApiVersion,
-        topic = Topic
-    }) ->
-
-    flare_protocol:encode_produce(Topic, Partition, lists:reverse(Buffer),
-        Acks, Compression, MsgApiVersion).
 
 reload_metatadata(#state {
         metadata_timer_ref = MetadataTimerRef
