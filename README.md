@@ -60,6 +60,12 @@ High Performance Erlang Kafka Producer
     <td>0</td>
     <td>Minimum reconnect time (milliseconds)</td>
   </tr>
+  <tr>
+    <td>query_api_versions</td>
+    <td>boolean()</td>
+    <td>true</td>
+    <td>Set to false when using Kafka version 0.9 or less</td>
+  </tr>
 </table>
 
 #### Topic options
@@ -73,7 +79,7 @@ High Performance Erlang Kafka Producer
   </theader>
   <tr>
     <td>acks</td>
-    <td>0..65535</td>
+    <td>-1..1 | all_isr | none | leader_only</td>
     <td>1</td>
     <td>Number of acknowledgements required for a succeful produce </td>
   </tr>
@@ -91,7 +97,7 @@ High Performance Erlang Kafka Producer
   </tr>
   <tr>
     <td>compression</td>
-    <td>none | snappy</td>
+    <td>no_compression | gzip | snappy</td>
     <td>snappy</td>
     <td>Compression configuration</td>
   </tr>
@@ -113,21 +119,20 @@ High Performance Erlang Kafka Producer
 
 ```erlang
 1> flare_app:start().
-{ok,[shackle,flare]}
-2> TopicOpts = [{acks, 1}, {compression, snappy}, {buffer_size, 1000000}, {pool_size, 8}].
-[{acks,1},
- {compression,snappy},
- {buffer_size,1000000},
- {pool_size,8}]
-3> flare_topic:start(<<"my topic">>, TopicOpts).
+{ok, [metal, compiler, syntax_tools, foil, granderl, shackle, flare]}
+2> flare_topic:start(<<"my_topic">>, [{compression, snappy}]).
 ok
-4> flare:produce(<<"my topic">>, <<"my msg">>).
+3> Timestamp = flare_utils:timestamp().
+1548011068201
+4> flare:produce(<<"my_topic">>, Timestamp, <<"key">>, <<"value">>, [], 500).
 ok
-5> {ok, ReqId} = flare:async_produce(<<"test">>, <<"hello">>).
-{ok,{{1468,419385,705022},<0.146.0>}}
-6> flare:receive_response(ReqId).
+5> {ok, ReqId} = flare:async_produce(<<"my_topic">>, Timestamp, <<"key">>, <<"value">>, [], self()).
+{ok, {{1548, 11081, 884262}, <0.349.0>}}
+6> flare:receive_response(ReqId, 500).
 ok
-7> flare_topic:stop(<<"my topic">>).
+7> flare:receive_response(ReqId, 500).
+ok
+8> flare_topic:stop(<<"my_topic">>).
 ok
 ```
 
@@ -160,7 +165,7 @@ make profile
 ```license
 The MIT License (MIT)
 
-Copyright (c) 2016-2018 Louis-Philippe Gauthier
+Copyright (c) 2016-2019 Louis-Philippe Gauthier
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -38,4 +38,8 @@ start(_StartType, _StartArgs) ->
 stop(_State) ->
     shackle_pool:stop(?APP),
     shackle_pool:terminate(),
+
+    flare_api_versions:terminate(),
+    flare_topic:terminate(),
+
     ok.

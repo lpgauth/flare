@@ -21,7 +21,7 @@ init() ->
     foil:new(?MODULE),
     foil:load(?MODULE).
 
--spec server(topic_name()) ->
+-spec server(topic()) ->
     {ok, {buffer_size(), buffer_name()}} | {error, atom()}.
 
 server(Topic) ->
@@ -42,13 +42,13 @@ server(Topic) ->
             {error, flare_not_started}
     end.
 
--spec start(topic_name()) ->
+-spec start(topic()) ->
     ok | {error, atom()}.
 
 start(Topic) ->
     start(Topic, []).
 
--spec start(topic_name(), topic_opts()) ->
+-spec start(topic(), [topic_opt()]) ->
     ok | {error, atom()}.
 
 start(Topic, Opts) ->
@@ -78,7 +78,7 @@ start(Topic, Opts) ->
             {error, flare_not_started}
     end.
 
--spec stop(topic_name()) ->
+-spec stop(topic()) ->
     ok | {error, atom()}.
 
 stop(Topic) ->
