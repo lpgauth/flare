@@ -1,6 +1,6 @@
 {application, flare, [
   {description, "kafka producer"},
-  {vsn, "0.2.1"},
+  {vsn, "0.3.0"},
   {registered, []},
   {applications, [
     foil,
