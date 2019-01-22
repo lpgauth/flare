@@ -194,14 +194,7 @@ handle_msg({#cast {
     }, {flare_response, Response}}, State) ->
 
     reply_all(ReqId, Response),
-    maybe_reload_metadata(Response, State);
-handle_msg({#cast {
-        client = ?CLIENT,
-        request_id = ReqId
-    }, {error, _Reason} = Error}, State) ->
-
-    reply_all(ReqId, Error),
-    {ok, State}.
+    maybe_reload_metadata(Response, State).
 
 -spec terminate(term(), term()) ->
     ok.
