@@ -6,43 +6,41 @@
 ]).
 
 %% public
--spec partitions(topic_name()) ->
-    {ok, partition_tuples()} | {error, term()}.
+-spec partitions(topic()) ->
+    {ok, [partition_tuple()]} | {error, term()}.
 
 partitions(Topic) ->
     case topic(Topic) of
-        {ok, {_Brokers, [#topic_metadata {partion_metadata = []}]}} ->
-            {error, no_metadata};
-        {ok, {Brokers, [#topic_metadata {partion_metadata = Metadata}]}} ->
-            {ok, partition_tuples(Metadata, Brokers)};
+        {ok, {Brokers, TopicMetadata}} ->
+            {ok, partition_tuples(Brokers, TopicMetadata)};
         {error, Reason} ->
             {error, Reason}
     end.
 
 %% private
-broker(Id, Brokers) ->
-    case lists:keyfind(Id, 2, Brokers) of
-        false ->
-            undefined;
-        #broker {} = Broker ->
-            Broker
-    end.
+broker(_Id, []) ->
+    undefined;
+broker(Id, [#{node_id := Id} = Broker | _]) ->
+    Broker;
+broker(Id, [#{} | T]) ->
+    broker(Id, T).
 
 name(Id) ->
     list_to_atom("flare_broker_" ++ integer_to_list(Id)).
 
-partition_tuples([], _Brokers) ->
+partition_tuples(_Brokers, []) ->
     [];
-partition_tuples([#partition_metadata {
-        partition_id = PartitionId,
-        leader = Id
-    } | T], Brokers) ->
+partition_tuples(Brokers, [#{
+        leader := Leader,
+        partition := Partition
+    } | T]) ->
 
-    case broker(Id, Brokers) of
+    case broker(Leader, Brokers) of
         undefined ->
-            partition_tuples(T, Brokers);
+            partition_tuples(Brokers, T);
         Broker ->
-            [{PartitionId, name(Id), Broker} | partition_tuples(T, Brokers)]
+            [{Partition, name(Leader), Broker} |
+                partition_tuples(Brokers, T)]
     end.
 
 topic(Topic) ->
@@ -50,16 +48,13 @@ topic(Topic) ->
         ?DEFAULT_BROKER_BOOTSTRAP_SERVERS), Topic).
 
 topic([], _Topic) ->
-    {error, no_metadata};
+    {error, bootstrap_failed};
 topic([{Ip, Port} | T], Topic) ->
-    Request = flare_protocol:encode_metadata([Topic]),
-    Data = flare_protocol:encode_request(?REQUEST_METADATA, 0,
-        ?CLIENT_ID, Request),
+    Req = flare_kpro:encode_metadata(Topic),
+    Data = flare_kpro:encode_request(0, Req),
     case flare_utils:send_recv(Ip, Port, Data) of
-        {ok, Data2} ->
-            {0, Brokers, TopicMetadata} =
-                flare_protocol:decode_metadata(Data2),
-            {ok, {Brokers, TopicMetadata}};
+        {ok, <<0:32, Bin/binary>>} ->
+            flare_kpro:decode_metadata(Bin);
         {error, _Reason} ->
             topic(T, Topic)
     end.

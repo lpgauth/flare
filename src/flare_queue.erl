@@ -11,7 +11,7 @@
 ]).
 
 %% public
--spec add(ext_req_id(), atom(), requests()) ->
+-spec add(ext_req_id(), atom(), [request()]) ->
     ok.
 
 add(ExtReqId, PoolName, Requests) ->
@@ -26,7 +26,7 @@ init() ->
     ok.
 
 -spec remove(ext_req_id()) ->
-    {ok, {atom(), requests()}} | {error, not_found}.
+    {ok, {atom(), [request()]}} | {error, not_found}.
 
 remove(ExtReqId) ->
     case ets_take(?ETS_TABLE_QUEUE, ExtReqId) of

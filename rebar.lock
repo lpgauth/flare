@@ -1,9 +1,14 @@
 {"1.1.0",
-[{<<"foil">>,
+[{<<"crc32cer">>,{pkg,<<"crc32cer">>,<<"0.1.3">>},1},
+ {<<"foil">>,
   {git,"https://github.com/lpgauth/foil.git",
        {ref,"b55c30ff8b21daf89a85d1565d4b836c7f9e549b"}},
   0},
  {<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
+ {<<"kafka_protocol">>,
+  {git,"https://github.com/klarna/kafka_protocol.git",
+       {ref,"1a0c772fe92d506a40fe0ae981b5ccd0b39c0315"}},
+  0},
  {<<"metal">>,
   {git,"https://github.com/lpgauth/metal.git",
        {ref,"43e28220b5affa45aa1e5fb0583fee26547968d3"}},
@@ -12,11 +17,10 @@
   {git,"https://github.com/lpgauth/shackle.git",
        {ref,"1cf730d86b918df5d390dcfce7f33f49de8e2084"}},
   0},
- {<<"snappy">>,
-  {git,"https://github.com/lpgauth/snappy-erlang-nif.git",
-       {ref,"c3a66caa01ecb479c9d8bb6281e2366a6711e3cb"}},
-  0}]}.
+ {<<"snappyer">>,{pkg,<<"snappyer">>,<<"1.2.4">>},1}]}.
 [
 {pkg_hash,[
- {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>}]}
+ {<<"crc32cer">>, <<"8984906C4B4FAE6AA292C48F286A1C83B19AD44BD102287ACB94D696015967CE">>},
+ {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>},
+ {<<"snappyer">>, <<"6D739C534CD2339633127A2B40279BE71F149E5842C5363A4D88E66EFB7C1FEC">>}]}
 ].

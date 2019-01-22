@@ -18,21 +18,20 @@
 ]).
 
 -record(state, {
-    acks                   :: 1..65535,
-    buffer = []            :: list(),
-    buffer_count       = 0 :: non_neg_integer(),
-    buffer_delay           :: pos_integer(),
-    buffer_size        = 0 :: non_neg_integer(),
-    buffer_size_max        :: undefined | pos_integer(),
-    buffer_timer_ref       :: undefined | reference(),
-    compression            :: compression(),
-    metadata_delay         :: pos_integer(),
-    metadata_timer_ref     :: undefined | reference(),
-    name                   :: atom(),
-    parent                 :: pid(),
-    partitions             :: undefined | list(),
-    requests = []          :: requests(),
-    topic                  :: topic_name()
+    buffer             = [] :: list(),
+    buffer_count       = 0  :: non_neg_integer(),
+    buffer_delay            :: pos_integer(),
+    buffer_size        = 0  :: non_neg_integer(),
+    buffer_size_max         :: undefined | pos_integer(),
+    buffer_timer_ref        :: undefined | reference(),
+    metadata_delay          :: pos_integer(),
+    metadata_timer_ref      :: undefined | reference(),
+    name                    :: atom(),
+    parent                  :: pid(),
+    partitions              :: undefined | list(),
+    produce_opts            :: produce_opts(),
+    requests           = [] :: [request()],
+    topic                   :: topic()
 }).
 
 -type state() :: #state {}.
@@ -45,21 +44,18 @@
     ok.
 
 produce(Pid, #state {
-        acks = Acks,
         buffer = Buffer,
-        compression = Compression,
         partitions = Partitions,
+        produce_opts = Opts,
         requests = Requests,
         topic = Topic
     }) ->
 
-    Messages = flare_protocol:encode_message_set(lists:reverse(Buffer)),
-    Messages2 = flare_utils:compress(Compression, Messages),
     {Partition, PoolName, _} = shackle_utils:random_element(Partitions),
-    Request = flare_protocol:encode_produce(Topic, Partition, Messages2,
-        Acks, Compression),
+    Batch = lists:reverse(Buffer),
+    Req = flare_kpro:encode_produce(Topic, Partition, Batch, Opts),
 
-    case shackle:cast(PoolName, {produce, Request}, Pid) of
+    case shackle:cast(PoolName, {produce, Req}, Pid) of
         {ok, ReqId} ->
             flare_queue:add(ReqId, PoolName, Requests);
         {error, Reason} ->
@@ -67,8 +63,8 @@ produce(Pid, #state {
                 "shackle cast failed: ~p~n", [Reason])
     end.
 
--spec start_link(buffer_name(), topic_name(), topic_opts(),
-    partition_tuples()) -> {ok, pid()}.
+-spec start_link(buffer_name(), topic(), [topic_opt()],
+    [partition_tuple()]) -> {ok, pid()}.
 
 start_link(Name, Topic, Opts, Partitions) ->
     Args = {Topic, Opts, Partitions},
@@ -87,22 +83,24 @@ init(Name, Parent, Opts) ->
         ?DEFAULT_TOPIC_BUFFER_DELAY),
     BufferSizeMax = ?LOOKUP(buffer_size, TopicOpts,
         ?DEFAULT_TOPIC_BUFFER_SIZE),
-    Compression = flare_utils:compression(?LOOKUP(compression, TopicOpts,
-        ?DEFAULT_TOPIC_COMPRESSION)),
+    Compression = ?LOOKUP(compression, TopicOpts,
+        ?DEFAULT_TOPIC_COMPRESSION),
     MetadataDelay = ?LOOKUP(metadata_delay, TopicOpts,
         ?DEFAULT_TOPIC_METADATA_DELAY),
 
     {ok, #state {
-        acks = Acks,
         buffer_delay = BufferDelay,
         buffer_size_max = BufferSizeMax,
         buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
-        compression = Compression,
         name = Name,
         metadata_delay = MetadataDelay,
         metadata_timer_ref = timer(MetadataDelay, ?MSG_METADATA_DELAY),
         parent = Parent,
         partitions = Partitions,
+        produce_opts = #{
+            compression => Compression,
+            required_acks => Acks
+        },
         topic = Topic
     }}.
 
@@ -193,9 +191,8 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
 handle_msg({#cast {
         client = ?CLIENT,
         request_id = ReqId
-    }, {ok, {_, _, ErrorCode, _}}}, State) ->
+    }, {flare_response, Response}}, State) ->
 
-    Response = flare_response:error_code(ErrorCode),
     reply_all(ReqId, Response),
     maybe_reload_metadata(Response, State);
 handle_msg({#cast {

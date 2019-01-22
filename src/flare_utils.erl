@@ -5,28 +5,24 @@
 -compile({inline_size, 512}).
 
 -export([
-    compress/2,
-    compression/1,
-    send_recv/3
+    msg/4,
+    send_recv/3,
+    timestamp/0
 ]).
 
 %% public
--spec compress(compression(), iolist()) ->
-    iolist().
+-spec msg(timestamp(), key(), value(), headers()) ->
+    {msg(), non_neg_integer()}.
 
-compress(?COMPRESSION_NONE, Messages) ->
-    Messages;
-compress(?COMPRESSION_SNAPPY, Messages) ->
-    {ok, Messages2} = snappy:compress(Messages),
-    Messages2.
-
--spec compression(compression_name()) ->
-    compression().
-
-compression(none) ->
-    ?COMPRESSION_NONE;
-compression(snappy) ->
-    ?COMPRESSION_SNAPPY.
+msg(Timestamp, Key, Value, Headers) ->
+    Msg = #{
+        ts => Timestamp,
+        key => Key,
+        value => Value,
+        headers => Headers
+    },
+    Size = size_of_msg(Key, Value, Headers),
+    {Msg, Size}.
 
 -spec send_recv(inet:socket_address() | inet:hostname(), inet:port_number(),
     iodata()) -> {ok, binary()} | {error, term()}.
@@ -55,3 +51,23 @@ send_recv(Ip, Port, Data) ->
             error_logger:error_msg("failed to connect: ~p~n", [Reason]),
             {error, Reason}
     end.
+
+-spec timestamp() ->
+    timestamp().
+
+timestamp() ->
+    os:system_time(millisecond).
+
+% private
+ssize(undefined) ->
+    0;
+ssize(Bin) when is_binary(Bin) ->
+    size(Bin).
+
+size_of_headers([]) ->
+    0;
+size_of_headers([{Key, Value} | T]) ->
+    ssize(Key) + ssize(Value) + size_of_headers(T).
+
+size_of_msg(Key, Value, Headers) ->
+    ssize(Key) + ssize(Value) + size_of_headers(Headers).

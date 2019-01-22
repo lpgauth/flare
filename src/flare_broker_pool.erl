@@ -16,9 +16,9 @@ start([{_PartitionId, Name, Broker} | T]) ->
     start(T).
 
 %% private
-start(Name, #broker {
-        host = Host,
-        port = Port
+start(Name, #{
+        host := Host,
+        port := Port
     }) ->
 
     BacklogSize = ?GET_ENV(broker_backlog_size,

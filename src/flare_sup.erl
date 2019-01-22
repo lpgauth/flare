@@ -22,6 +22,7 @@ start_link() ->
     {ok, {{one_for_one, 5, 10}, []}}.
 
 init([]) ->
+    flare_api_versions:init(),
     flare_queue:init(),
     flare_topic:init(),
 
