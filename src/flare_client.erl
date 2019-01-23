@@ -51,7 +51,7 @@ handle_request({produce, Req}, #state {
 
 handle_data(<<ReqId:32, Rest/binary>>, State) ->
     Response = flare_kpro:decode_produce(Rest),
-    {ok, [{ReqId, {flare_response, Response}}], State}.
+    {ok, [{ReqId, Response}], State}.
 
 -spec terminate(state()) -> ok.
 

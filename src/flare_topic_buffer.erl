@@ -191,7 +191,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
 handle_msg({#cast {
         client = ?CLIENT,
         request_id = ReqId
-    }, {flare_response, Response}}, State) ->
+    }, Response}, State) ->
 
     reply_all(ReqId, Response),
     maybe_reload_metadata(Response, State).
