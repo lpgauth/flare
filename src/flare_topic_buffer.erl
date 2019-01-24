@@ -125,8 +125,8 @@ handle_msg(?MSG_BUFFER_DELAY, #state {
         buffer = [],
         buffer_count = 0,
         buffer_size = 0,
-        requests = [],
-        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY)
+        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
+        requests = []
     }};
 handle_msg(?MSG_METADATA_DELAY, #state {
         metadata_delay = MetadataDelay,
@@ -151,8 +151,10 @@ handle_msg(?MSG_METADATA_DELAY, #state {
 handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         buffer = Buffer,
         buffer_count = BufferCount,
+        buffer_delay = BufferDelay,
         buffer_size = BufferSize,
         buffer_size_max = SizeMax,
+        buffer_timer_ref = BufferTimerRef,
         name = Name,
         requests = Requests
     } = State) when (BufferSize + Size) > SizeMax ->
@@ -165,11 +167,13 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
     }),
 
     shackle_backlog:decrement(Name, Size),
+    erlang:cancel_timer(BufferTimerRef),
 
     {ok, State#state {
         buffer = [],
         buffer_count = 0,
         buffer_size = 0,
+        buffer_timer_ref = timer(BufferDelay, ?MSG_BUFFER_DELAY),
         requests = []
     }};
 handle_msg({produce, ReqId, Message, Size, Pid}, #state {
