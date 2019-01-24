@@ -18,7 +18,7 @@ async_produce(Topic, Timestamp, Key, Value, Headers, Pid) ->
     case flare_topic:server(Topic) of
         {ok, {BufferSize, Server}} ->
             {Msg, Size} = flare_utils:msg(Timestamp, Key, Value, Headers),
-            case shackle_backlog:check(Server, BufferSize * 2, Size) of
+            case shackle_backlog:check(Server, BufferSize * 4, Size) of
                 true ->
                     ReqId = {os:timestamp(), self()},
                     Server ! {produce, ReqId, Msg, Size, Pid},
