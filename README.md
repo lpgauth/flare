@@ -33,7 +33,7 @@ High Performance Erlang Kafka Producer
   <tr>
     <td>broker_pool_size</td>
     <td>pos_integer()</td>
-    <td>2</td>
+    <td>4</td>
     <td>Number of connections per broker</td>
   </tr>
   <tr>
@@ -51,13 +51,13 @@ High Performance Erlang Kafka Producer
   <tr>
     <td>broker_reconnect_time_max</td>
     <td>pos_integer() | infinity</td>
-    <td>120000</td>
+    <td>120000 (120s)</td>
     <td>Maximum reconnect time (milliseconds)</td>
   </tr>
   <tr>
     <td>broker_reconnect_time_min</td>
     <td>non_neg_integer()</td>
-    <td>0</td>
+    <td>2000 (2s)</td>
     <td>Minimum reconnect time (milliseconds)</td>
   </tr>
   <tr>
@@ -86,25 +86,25 @@ High Performance Erlang Kafka Producer
   <tr>
     <td>buffer_delay</td>
     <td>pos_integer()</td>
-    <td>1000</td>
+    <td>1000 (1s)</td>
     <td>Maximun delay (milliseconds) before flushing the buffer</td>
   </tr>
   <tr>
     <td>buffer_size</td>
     <td>pos_integer()</td>
-    <td>10000</td>
-    <td>Maximun buffer size (bytes) before flushing</td>
+    <td>100000</td>
+    <td>Maximun buffer size before flushing</td>
   </tr>
   <tr>
     <td>compression</td>
     <td>no_compression | gzip | snappy</td>
-    <td>snappy</td>
+    <td>gzip</td>
     <td>Compression configuration</td>
   </tr>
   <tr>
     <td>metadata_delay</td>
     <td>pos_integer()</td>
-    <td>60000</td>
+    <td>300000 (300 s)</td>
     <td>Maximun delay (milliseconds) before reloading metadata</td>
   </tr>
   <tr>
