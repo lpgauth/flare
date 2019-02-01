@@ -23,11 +23,11 @@ fprofx() ->
 
     flare_app:start(),
     Topic = <<"test">>,
-    ok = flare_topic:start(Topic),
+    ok = flare_topic:start(Topic, [{buffer_size, 1000}]),
 
     Self = self(),
     [spawn(fun () ->
-        [flare:async_produce(Topic, <<"event1">>) || _ <- lists:seq(1, ?N)],
+        [produce(Topic) || _ <- lists:seq(1, ?N)],
         Self ! exit
     end) || _ <- lists:seq(1, ?P)],
     wait(),
@@ -40,6 +40,12 @@ fprofx() ->
     ok.
 
 %% private
+produce(Topic) ->
+    Timestamp = flare_utils:timestamp(),
+    Key = undefined,
+    Msg = <<"Lorem ipsum dolor amet, consectetur adipiscing in condimentum.">>,
+    flare:async_produce(Topic, Timestamp, Key, Msg, [], self()).
+
 wait() ->
     wait(?P).
 

@@ -1,6 +1,10 @@
 -module(flare_topic).
 -include("flare_internal.hrl").
 
+-ignore_xref([
+    {flare_topic_foil, lookup, 1}
+]).
+
 -compile(inline).
 -compile({inline_size, 512}).
 
@@ -25,20 +29,15 @@ init() ->
     {ok, {buffer_size(), buffer_name()}} | {error, atom()}.
 
 server(Topic) ->
-    case foil:lookup(?MODULE, Topic) of
+    try flare_topic_foil:lookup(Topic) of
         {ok, {BufferSize, PoolSize}} ->
             N = shackle_utils:random(PoolSize),
-            case foil:lookup(?MODULE, {Topic, N}) of
-                {ok, ServerName} ->
-                    {ok, {BufferSize, ServerName}};
-                {error, key_not_found} ->
-                    {error, topic_not_started};
-                {error, _} ->
-                    {error, flare_not_started}
-            end;
+            {ok, ServerName} = flare_topic_foil:lookup({Topic, N}),
+            {ok, {BufferSize, ServerName}};
         {error, key_not_found} ->
-            {error, topic_not_started};
-        {error, _} ->
+            {error, topic_not_started}
+    catch
+        error:undef ->
             {error, flare_not_started}
     end.
 
