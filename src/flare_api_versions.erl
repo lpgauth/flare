@@ -1,6 +1,10 @@
 -module(flare_api_versions).
 -include("flare_internal.hrl").
 
+-ignore_xref([
+    {flare_api_versions_foil, lookup, 1}
+]).
+
 -export([
     init/0,
     produce/0,
@@ -34,10 +38,13 @@ init() ->
     {ok, vsn()} | {error, flare_not_started}.
 
 produce() ->
-    case foil:lookup(?MODULE, produce) of
+    try flare_api_versions_foil:lookup(produce) of
         {ok, Vsn} ->
             {ok, Vsn};
         {error, _} ->
+            {error, flare_not_started}
+    catch
+        error:undef ->
             {error, flare_not_started}
     end.
 
