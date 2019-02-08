@@ -197,7 +197,13 @@ handle_msg({#cast {
         request_id = ReqId
     }, Response}, State) ->
 
-    reply_all(ReqId, Response),
+    case flare_queue:remove(ReqId) of
+        {ok, {_PoolName, Requests}} ->
+            reply_all(Requests, Response);
+        {error, not_found} ->
+            shackle_utils:warning_msg(?CLIENT,
+                "reply error: not_found~n", [])
+    end,
     maybe_reload_metadata(Response, State).
 
 -spec terminate(term(), term()) ->
@@ -238,16 +244,7 @@ reply_all([{_, undefined} | T], Response) ->
     reply_all(T, Response);
 reply_all([{ReqId, Pid} | T], Response) ->
     Pid ! {ReqId, Response},
-    reply_all(T, Response);
-reply_all(ReqId, Response) ->
-    case flare_queue:remove(ReqId) of
-        {ok, {_PoolName, Requests}} ->
-            reply_all(Requests, Response);
-        {error, not_found} ->
-            shackle_utils:warning_msg(?CLIENT,
-                "reply error: ~p~n", [not_found]),
-            ok
-    end.
+    reply_all(T, Response).
 
 timer(Time, Msg) ->
     erlang:send_after(Time, self(), Msg).
