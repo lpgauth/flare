@@ -7,7 +7,7 @@
  {<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
  {<<"kafka_protocol">>,
   {git,"https://github.com/klarna/kafka_protocol.git",
-       {ref,"36e1a7f554a480dd3bc0d7e1a2418ae54a8d09bb"}},
+       {ref,"53d468f49b7006b6e8c0b38180b636297cdd11e4"}},
   0},
  {<<"metal">>,
   {git,"https://github.com/lpgauth/metal.git",
