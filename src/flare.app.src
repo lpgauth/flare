@@ -7,7 +7,8 @@
     kernel,
     metal,
     stdlib,
-    shackle
+    shackle,
+    kafka_protocol
   ]},
   {mod, {flare_app, []}},
   {env, []}
