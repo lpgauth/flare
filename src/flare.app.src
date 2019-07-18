@@ -4,6 +4,7 @@
   {registered, []},
   {applications, [
     foil,
+    kafka_protocol,
     kernel,
     metal,
     stdlib,
