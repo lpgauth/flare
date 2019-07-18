@@ -1,5 +1,5 @@
 %% protocol
--define(CLIENT_ID, "flare").
+-define(CLIENT_ID, <<"flare">>).
 -define(MAX_REQUEST_ID, 4294967296).
 
 % vsn
