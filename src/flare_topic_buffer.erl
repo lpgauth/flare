@@ -76,7 +76,7 @@ start_link(Name, Topic, Opts, Partitions) ->
 
 init(Name, Parent, Opts) ->
     {Topic, TopicOpts, Partitions} = Opts,
-    ok = shackle_backlog:new(Name),
+    ok = shackle_backlog:new(flare_topic, Name),
 
     Acks = ?LOOKUP(acks, TopicOpts, ?DEFAULT_TOPIC_ACKS),
     BufferDelay = ?LOOKUP(buffer_delay, TopicOpts,
@@ -166,7 +166,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         requests = [{ReqId, Pid} | Requests]
     }),
 
-    shackle_backlog:decrement(Name, Size),
+    shackle_backlog:decrement(shackle_backlog_flare_topic, Name, Size),
     erlang:cancel_timer(BufferTimerRef),
 
     {ok, State#state {
@@ -184,7 +184,7 @@ handle_msg({produce, ReqId, Message, Size, Pid}, #state {
         requests = Requests
     } = State) ->
 
-    shackle_backlog:decrement(Name, Size),
+    shackle_backlog:decrement(shackle_backlog_flare_topic, Name, Size),
 
     {ok, State#state {
         buffer = [Message | Buffer],

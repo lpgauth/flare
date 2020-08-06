@@ -23,7 +23,8 @@
 
 init() ->
     foil:new(?MODULE),
-    foil:load(?MODULE).
+    foil:load(?MODULE),
+    shackle_backlog:new(flare_topic).
 
 -spec server(topic()) ->
     {ok, {buffer_size(), buffer_name()}} | {error, atom()}.
@@ -98,7 +99,8 @@ stop(Topic) ->
     ok.
 
 terminate() ->
-    foil:delete(?MODULE).
+    foil:delete(?MODULE),
+    shackle_backlog:delete(flare_topic).
 
 %% private
 name(Topic, Index) ->
