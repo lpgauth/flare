@@ -15,7 +15,7 @@
   0},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
-       {ref,"ba93417cc8d1781afb4b4a604146c910a415faca"}},
+       {ref,"7527d5cae67efd8b93f0d9636076427e038fc6fe"}},
   0},
  {<<"snappyer">>,{pkg,<<"snappyer">>,<<"1.2.4">>},1}]}.
 [
