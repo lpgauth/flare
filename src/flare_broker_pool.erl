@@ -32,6 +32,12 @@ start(Name, #{
         ?DEFAULT_BROKER_RECONNECT_MAX),
     ReconnectTimeMin = ?GET_ENV(broker_reconnect_time_min,
         ?DEFAULT_BROKER_RECONNECT_MIN),
+    PoolConfig = proplists:from_map(
+        maps:merge(
+            #{backlog_size => BacklogSize,
+              pool_size => PoolSize,
+              pool_strategy => PoolStrategy}),
+        proplists:to_map(?GET_ENV(pool_config, []))),
 
     shackle_pool:start(Name, ?CLIENT, [
         {ip, Ip},
@@ -40,8 +46,4 @@ start(Name, #{
         {reconnect_time_max, ReconnectTimeMax},
         {reconnect_time_min, ReconnectTimeMin},
         {socket_options, ?SOCKET_OPTIONS}
-    ], [
-        {backlog_size, BacklogSize},
-        {pool_size, PoolSize},
-        {pool_strategy, PoolStrategy}
-    ]).
+    ], PoolConfig).
