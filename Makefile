@@ -1,6 +1,6 @@
 CACHEGRIND=qcachegrind
 ELVIS=./bin/elvis
-REBAR3=./bin/rebar3
+REBAR3 ?= ./bin/rebar3
 
 all: compile
 
