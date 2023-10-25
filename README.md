@@ -34,36 +34,62 @@ High Performance Erlang Kafka Producer
     <td>broker_pool_size</td>
     <td>pos_integer()</td>
     <td>4</td>
-    <td>Number of connections per broker</td>
+    <td>Number of connections per broker (deprecated - use
+      <pre>{shackle, [{pool, [{pool_size, N}]}]}</pre>)</td>
   </tr>
   <tr>
     <td>broker_pool_strategy</td>
     <td>random | round_robin</td>
     <td>random</td>
-    <td>Broker connection selection strategy</td>
+    <td>Broker connection selection strategy (deprecated - use
+      <pre>{shackle, [{pool, [{pool_strategy, X}]}]}</pre>)</td>
   </tr>
   <tr>
     <td>broker_reconnect</td>
     <td>boolean()</td>
     <td>true</td>
-    <td>Reconnect closed broker connections</td>
+    <td>Reconnect closed broker connections (deprecated - use
+      <pre>{shackle, [{client, [{reconnect, Value}]}]}</pre>)</td>
   </tr>
   <tr>
     <td>broker_reconnect_time_max</td>
     <td>pos_integer() | infinity</td>
     <td>120000 (120s)</td>
-    <td>Maximum reconnect time (milliseconds)</td>
+    <td>Maximum reconnect time (milliseconds) (deprecated - use
+      <pre>{shackle, [{client, [{reconnect_time_max, Value}]}]}</pre>)</td>
   </tr>
   <tr>
     <td>broker_reconnect_time_min</td>
     <td>non_neg_integer()</td>
     <td>2000 (2s)</td>
-    <td>Minimum reconnect time (milliseconds)</td>
+    <td>Minimum reconnect time (milliseconds) (deprecated - use
+      <pre>{shackle, [{client, [{reconnect_time_min, Value}]}]}</pre>)</td>
   </tr>
   <tr>
     <td>query_api_versions</td>
     <td>boolean()</td>
     <td>true</td>
+    <td>Set to false when using Kafka version 0.9 or less</td>
+  </tr>
+  <tr>
+    <td>shackle</td>
+    <td>list()</td>
+    <td>
+      <table>
+        <tr>
+          <td>pool</td>
+          <td>list()</td>
+          <td>[]</td>
+          <td>List of options passed to shackle_pool instance</td>
+        </tr>
+        <tr>
+          <td>client</td>
+          <td>list()</td>
+          <td>[]</td>
+          <td>List of options passed to shackle client instance</td>
+        </tr>
+      </table>
+    </td>
     <td>Set to false when using Kafka version 0.9 or less</td>
   </tr>
 </table>
