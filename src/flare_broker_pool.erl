@@ -26,7 +26,6 @@ get_shackle_parameters(IP, Port) ->
     shackle_utils:merge_options(?APP, [
         {ip, IP},
         {port, Port},
-        {protocol, shackle_udp},
         {reconnect, ?DEFAULT_BROKER_RECONNECT},
         {reconnect_time_max, ?DEFAULT_BROKER_RECONNECT_MAX},
         {reconnect_time_min, ?DEFAULT_BROKER_RECONNECT_MIN},
