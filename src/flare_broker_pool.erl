@@ -16,32 +16,29 @@ start([{_PartitionId, Name, Broker} | T]) ->
     start(T).
 
 %% private
-start(Name, #{
-        host := Host,
-        port := Port
-    }) ->
+start(Name, #{host := Host, port := Port}) ->
+    {ClientConfig, PoolConfig} = get_shackle_parameters(binary_to_list(Host), Port),
+    shackle_pool:start(Name, ?CLIENT, ClientConfig, PoolConfig).
 
-    BacklogSize = ?GET_ENV(broker_backlog_size,
-        ?DEFAULT_BROKER_BACKLOG_SIZE),
-    Ip = binary_to_list(Host),
-    PoolSize = ?GET_ENV(broker_pool_size, ?DEFAULT_BROKER_POOL_SIZE),
-    PoolStrategy = ?GET_ENV(broker_pool_strategy,
-        ?DEFAULT_BROKER_POOL_STRATEGY),
-    Reconnect = ?GET_ENV(broker_reconnect, ?DEFAULT_BROKER_RECONNECT),
-    ReconnectTimeMax = ?GET_ENV(broker_reconnect_time_max,
-        ?DEFAULT_BROKER_RECONNECT_MAX),
-    ReconnectTimeMin = ?GET_ENV(broker_reconnect_time_min,
-        ?DEFAULT_BROKER_RECONNECT_MIN),
-
-    shackle_pool:start(Name, ?CLIENT, [
-        {ip, Ip},
+get_shackle_parameters(IP, Port) ->
+    %% Flare maps the shackle options using "broker_" prefix, so use the
+    %% option name mapping
+    shackle_utils:merge_options(?APP, [
+        {ip, IP},
         {port, Port},
-        {reconnect, Reconnect},
-        {reconnect_time_max, ReconnectTimeMax},
-        {reconnect_time_min, ReconnectTimeMin},
+        {protocol, shackle_udp},
+        {reconnect, ?DEFAULT_BROKER_RECONNECT},
+        {reconnect_time_max, ?DEFAULT_BROKER_RECONNECT_MAX},
+        {reconnect_time_min, ?DEFAULT_BROKER_RECONNECT_MIN},
+        {pool_size, ?DEFAULT_BROKER_POOL_SIZE},
+        {pool_strategy, ?DEFAULT_BROKER_POOL_STRATEGY},
+        {backlog_size, ?DEFAULT_BROKER_BACKLOG_SIZE},
         {socket_options, ?SOCKET_OPTIONS}
-    ], [
-        {backlog_size, BacklogSize},
-        {pool_size, PoolSize},
-        {pool_strategy, PoolStrategy}
-    ]).
+    ], #{
+         backlog_size => broker_backlog_size,
+         pool_size => broker_pool_size,
+         pool_strategy => broker_pool_strategy,
+         reconnect => broker_reconnect,
+         reconnect_time_max => broker_reconnect_time_max,
+         reconnect_time_min => broker_reconnect_time_min
+    }).

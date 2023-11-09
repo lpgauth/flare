@@ -71,7 +71,7 @@ start_link(Name, Topic, Opts, Partitions) ->
     metal:start_link(?MODULE, Name, Args).
 
 %% metal_server callbacks
--spec init(server_name(), pid(), term()) ->
+-spec init(shackle_server:name(), pid(), term()) ->
     no_return().
 
 init(Name, Parent, Opts) ->
