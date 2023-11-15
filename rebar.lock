@@ -24,7 +24,7 @@
  {<<"quantile_estimator">>,{pkg,<<"quantile_estimator">>,<<"0.2.1">>},2},
  {<<"shackle">>,
   {git,"ssh://git@github.com/adgear/erlang-shackle.git",
-       {ref,"4b3791ec9d96035bf2e65f0bdeaa95afbe5df906"}},
+       {ref,"45bc4276bea2d54dc183faa56714830d68a383c9"}},
   0},
  {<<"snappyer">>,{pkg,<<"snappyer">>,<<"1.2.4">>},1}]}.
 [
