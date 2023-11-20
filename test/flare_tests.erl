@@ -13,7 +13,7 @@ flare_test_() ->
 %% tests
 produce_subtest() ->
     Topic = <<"test">>,
-    {error, topic_not_started} = produce(Topic),
+    ?assertMatch({error, topic_not_started}, produce(Topic)),
     ok = flare_topic:start(Topic, [
         {buffer_delay, 500},
         {compression, snappy}

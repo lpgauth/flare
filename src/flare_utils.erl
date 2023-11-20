@@ -28,7 +28,7 @@ msg(Timestamp, Key, Value, Headers) ->
     iodata()) -> {ok, binary()} | {error, term()}.
 
 send_recv(Ip, Port, Data) ->
-    case gen_tcp:connect(Ip, Port, ?SOCKET_OPTIONS ++ [{active, false}]) of
+    case gen_tcp:connect(Ip, Port, ?SOCKET_OPTIONS ++ [{active, false}], ?TIMEOUT) of
         {ok, Socket} ->
             case gen_tcp:send(Socket, Data) of
                 ok ->
