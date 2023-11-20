@@ -1,10 +1,17 @@
-{"1.1.0",
+{"1.2.0",
 [{<<"crc32cer">>,{pkg,<<"crc32cer">>,<<"0.1.3">>},1},
+ {<<"erlsem">>,
+  {git,"https://github.com/x0id/erlsem.git",
+       {ref,"118506906cb41e9100392da4711bc9303451ec88"}},
+  1},
  {<<"foil">>,
   {git,"https://github.com/lpgauth/foil.git",
        {ref,"b55c30ff8b21daf89a85d1565d4b836c7f9e549b"}},
   0},
- {<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
+ {<<"granderl">>,
+  {git,"https://github.com/adgear/granderl.git",
+       {ref,"a628b5f8ae696b1c4a8583b679661d2bf0d4affb"}},
+  1},
  {<<"kafka_protocol">>,
   {git,"https://github.com/klarna/kafka_protocol.git",
        {ref,"e97e18adca408c02d195219d18731bad60367bfe"}},
@@ -13,14 +20,22 @@
   {git,"https://github.com/lpgauth/metal.git",
        {ref,"43e28220b5affa45aa1e5fb0583fee26547968d3"}},
   0},
+ {<<"prometheus">>,{pkg,<<"prometheus">>,<<"4.8.1">>},1},
+ {<<"quantile_estimator">>,{pkg,<<"quantile_estimator">>,<<"0.2.1">>},2},
  {<<"shackle">>,
-  {git,"https://github.com/lpgauth/shackle.git",
-       {ref,"7527d5cae67efd8b93f0d9636076427e038fc6fe"}},
+  {git,"ssh://git@github.com/adgear/erlang-shackle.git",
+       {ref,"45bc4276bea2d54dc183faa56714830d68a383c9"}},
   0},
  {<<"snappyer">>,{pkg,<<"snappyer">>,<<"1.2.4">>},1}]}.
 [
 {pkg_hash,[
  {<<"crc32cer">>, <<"8984906C4B4FAE6AA292C48F286A1C83B19AD44BD102287ACB94D696015967CE">>},
- {<<"granderl">>, <<"F20077A68BD80B8D8783BD15A052813C6483771DEC1A5B837D307CBE92F14122">>},
- {<<"snappyer">>, <<"6D739C534CD2339633127A2B40279BE71F149E5842C5363A4D88E66EFB7C1FEC">>}]}
+ {<<"prometheus">>, <<"FA76B152555273739C14B06F09F485CF6D5D301FE4E9D31B7FF803D26025D7A0">>},
+ {<<"quantile_estimator">>, <<"EF50A361F11B5F26B5F16D0696E46A9E4661756492C981F7B2229EF42FF1CD15">>},
+ {<<"snappyer">>, <<"6D739C534CD2339633127A2B40279BE71F149E5842C5363A4D88E66EFB7C1FEC">>}]},
+{pkg_hash_ext,[
+ {<<"crc32cer">>, <<"E35840BFD312192748BF177E92E85270E2BF0BBC01462DA1F7AFD4298EDAE4A7">>},
+ {<<"prometheus">>, <<"6EDFBE928D271C7F657A6F2C46258738086584BD6CAE4A000B8B9A6009BA23A5">>},
+ {<<"quantile_estimator">>, <<"282A8A323CA2A845C9E6F787D166348F776C1D4A41EDE63046D72D422E3DA946">>},
+ {<<"snappyer">>, <<"76ABB8ED503722E10EE0F587956662881AF9009067EFDEC87798A03DB3527184">>}]}
 ].
